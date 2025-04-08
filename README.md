@@ -19,7 +19,7 @@
 
 1.  克隆仓库：
     ```bash
-    git clone <repository_url>
+    git clone https://github.com/Daydreamcgy/GYIndex.git
     ```
 2.  在你的网页浏览器中打开HTML文件，探索由AI生成的内容。 🌐  简单快捷！
 
