@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>键盘模拟器</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .display {
+            width: 80%;
+            height: 100px;
+            border: 2px solid #333;
+            margin-bottom: 20px;
+            padding: 10px;
+            font-size: 24px;
+            overflow: auto;
+            background-color: #f9f9f9;
+        }
+        
+        .keyboard {
+            display: grid;
+            grid-template-columns: repeat(15, 1fr);
+            gap: 5px;
+            width: 80%;
+        }
+        
+        .key {
+            padding: 15px 10px;
+            text-align: center;
+            background-color: #e0e0e0;
+            border-radius: 5px;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.1s;
+        }
+        
+        .key:hover {
+            background-color: #d0d0d0;
+        }
+        
+        .key:active, .key.active {
+            background-color: #a0a0a0;
+            transform: scale(0.95);
+        }
+        
+        .space {
+            grid-column: span 5;
+        }
+        
+        .tab {
+            grid-column: span 2;
+        }
+        
+        .caps {
+            grid-column: span 2;
+        }
+        
+        .shift {
+            grid-column: span 2;
+        }
+        
+        .enter {
+            grid-column: span 2;
+        }
+        
+        .backspace {
+            grid-column: span 2;
+        }
+        
+        .ctrl, .alt, .win, .fn {
+            grid-column: span 1.5;
+        }
+    </style>
+</head>
+<body>
+    <h1>键盘模拟器</h1>
+    <div class="display" id="display"></div>
+    
+    <div class="keyboard" id="keyboard">
+        <!-- 第一行 -->
+        <div class="key" data-key="`">`</div>
+        <div class="key" data-key="1">1</div>
+        <div class="key" data-key="2">2</div>
+        <div class="key" data-key="3">3</div>
+        <div class="key" data-key="4">4</div>
+        <div class="key" data-key="5">5</div>
+        <div class="key" data-key="6">6</div>
+        <div class="key" data-key="7">7</div>
+        <div class="key" data-key="8">8</div>
+        <div class="key" data-key="9">9</div>
+        <div class="key" data-key="0">0</div>
+        <div class="key" data-key="-">-</div>
+        <div class="key" data-key="=">=</div>
+        <div class="key backspace" data-key="Backspace">Backspace</div>
+        
+        <!-- 第二行 -->
+        <div class="key tab" data-key="Tab">Tab</div>
+        <div class="key" data-key="q">Q</div>
+        <div class="key" data-key="w">W</div>
+        <div class="key" data-key="e">E</div>
+        <div class="key" data-key="r">R</div>
+        <div class="key" data-key="t">T</div>
+        <div class="key" data-key="y">Y</div>
+        <div class="key" data-key="u">U</div>
+        <div class="key" data-key="i">I</div>
+        <div class="key" data-key="o">O</div>
+        <div class="key" data-key="p">P</div>
+        <div class="key" data-key="[">[</div>
+        <div class="key" data-key="]">]</div>
+        <div class="key" data-key="\">\</div>
+        
+        <!-- 第三行 -->
+        <div class="key caps" data-key="CapsLock">Caps Lock</div>
+        <div class="key" data-key="a">A</div>
+        <div class="key" data-key="s">S</div>
+        <div class="key" data-key="d">D</div>
+        <div class="key" data-key="f">F</div>
+        <div class="key" data-key="g">G</div>
+        <div class="key" data-key="h">H</div>
+        <div class="key" data-key="j">J</div>
+        <div class="key" data-key="k">K</div>
+        <div class="key" data-key="l">L</div>
+        <div class="key" data-key=";">;</div>
+        <div class="key" data-key="'">'</div>
+        <div class="key enter" data-key="Enter">Enter</div>
+        
+        <!-- 第四行 -->
+        <div class="key shift" data-key="Shift">Shift</div>
+        <div class="key" data-key="z">Z</div>
+        <div class="key" data-key="x">X</div>
+        <div class="key" data-key="c">C</div>
+        <div class="key" data-key="v">V</div>
+        <div class="key" data-key="b">B</div>
+        <div class="key" data-key="n">N</div>
+        <div class="key" data-key="m">M</div>
+        <div class="key" data-key=",">,</div>
+        <div class="key" data-key=".">.</div>
+        <div class="key" data-key="/">/</div>
+        <div class="key shift" data-key="Shift">Shift</div>
+        
+        <!-- 第五行 -->
+        <div class="key ctrl" data-key="Control">Ctrl</div>
+        <div class="key win" data-key="Meta">Win</div>
+        <div class="key alt" data-key="Alt">Alt</div>
+        <div class="key space" data-key=" ">Space</div>
+        <div class="key alt" data-key="Alt">Alt</div>
+        <div class="key win" data-key="Meta">Win</div>
+        <div class="key fn" data-key="Fn">Fn</div>
+        <div class="key ctrl" data-key="Control">Ctrl</div>
+    </div>
+    
+    <script>
+        const display = document.getElementById('display');
+        const keys = document.querySelectorAll('.key');
+        let capsLock = false;
+        let shiftPressed = false;
+        
+        // 处理物理键盘按键
+        document.addEventListener('keydown', (e) => {
+            e.preventDefault();
+            const key = e.key;
+            const keyElement = document.querySelector(`.key[data-key="${key}"]`) || 
+                              document.querySelector(`.key[data-key="${e.code}"]`);
+            
+            if (keyElement) {
+                keyElement.classList.add('active');
+                
+                // 处理特殊键
+                if (key === 'CapsLock') {
+                    capsLock = !capsLock;
+                    keyElement.classList.toggle('caps-on', capsLock);
+                } else if (key === 'Shift') {
+                    shiftPressed = true;
+                }
+                
+                // 显示按下的键
+                let displayText = key;
+                if (key === ' ') displayText = 'Space';
+                else if (key === 'Enter') displayText = 'Enter\n';
+                else if (key === 'Tab') displayText = 'Tab\t';
+                else if (key === 'Backspace') {
+                    display.textContent = display.textContent.slice(0, -1);
+                    return;
+                }
+                
+                display.textContent += displayText;
+            }
+        });
+        
+        document.addEventListener('keyup', (e) => {
+            const key = e.key;
+            const keyElement = document.querySelector(`.key[data-key="${key}"]`) || 
+                              document.querySelector(`.key[data-key="${e.code}"]`);
+            
+            if (keyElement) {
+                keyElement.classList.remove('active');
+                
+                if (key === 'Shift') {
+                    shiftPressed = false;
+                }
+            }
+        });
+        
+        // 处理屏幕键盘点击
+        keys.forEach(key => {
+            key.addEventListener('mousedown', () => {
+                key.classList.add('active');
+                const keyValue = key.getAttribute('data-key');
+                
+                // 处理特殊键
+                if (keyValue === 'CapsLock') {
+                    capsLock = !capsLock;
+                    key.classList.toggle('caps-on', capsLock);
+                    return;
+                } else if (keyValue === 'Shift') {
+                    shiftPressed = true;
+                    return;
+                } else if (keyValue === 'Backspace') {
+                    display.textContent = display.textContent.slice(0, -1);
+                    return;
+                }
+                
+                // 显示按下的键
+                let displayText = keyValue;
+                if (keyValue === ' ') displayText = ' ';
+                else if (keyValue === 'Enter') displayText = '\n';
+                else if (keyValue === 'Tab') displayText = '\t';
+                
+                // 处理大小写
+                if (capsLock || shiftPressed) {
+                    if (key.textContent.length === 1 && /^[a-z]$/.test(key.textContent.toLowerCase())) {
+                        displayText = key.textContent.toUpperCase();
+                    } else if (shiftPressed) {
+                        // 处理shift+数字/符号
+                        const shiftMap = {
+                            '1': '!', '2': '@', '3': '#', '4': '$', '5': '%',
+                            '6': '^', '7': '&', '8': '*', '9': '(', '0': ')',
+                            '-': '_', '=': '+', '[': '{', ']': '}', '\\': '|',
+                            ';': ':', '\'': '"', ',': '<', '.': '>', '/': '?',
+                            '`': '~'
+                        };
+                        displayText = shiftMap[keyValue] || displayText;
+                    }
+                }
+                
+                display.textContent += displayText;
+            });
+            
+            key.addEventListener('mouseup', () => {
+                key.classList.remove('active');
+                const keyValue = key.getAttribute('data-key');
+                if (keyValue === 'Shift') {
+                    shiftPressed = false;
+                }
+            });
+            
+            key.addEventListener('mouseleave', () => {
+                if (key.classList.contains('active')) {
+                    key.classList.remove('active');
+                    const keyValue = key.getAttribute('data-key');
+                    if (keyValue === 'Shift') {
+                        shiftPressed = false;
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>

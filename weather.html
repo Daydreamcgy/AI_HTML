@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SkyVue Premium Weather</title>
+    <style>
+        :root {
+            --primary: #0a84ff;
+            --primary-light: rgba(10, 132, 255, 0.2);
+            --card-bg: linear-gradient(152deg, #1c1c1e, #2c2c2e);
+            --text-primary: rgba(255, 255, 255, 0.92);
+            --text-secondary: rgba(255, 255, 255, 0.6);
+            --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
+            --ease-in-out-quint: cubic-bezier(0.83, 0, 0.17, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: radial-gradient(ellipse at bottom, #0d0d12 0%, #000000 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px;
+            overflow-x: hidden;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            position: relative;
+            z-index: 10;
+        }
+
+        .app-title {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            background: linear-gradient(90deg, #ffffff, #a7d6ff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.5px;
+        }
+
+        .app-subtitle {
+            font-size: 16px;
+            color: var(--text-secondary);
+            font-weight: 400;
+            margin-bottom: 16px;
+        }
+
+        .premium-badge {
+            display: inline-flex;
+            align-items: center;
+            background: linear-gradient(90deg, #ff9a9e 0%, #fad0c4 100%);
+            color: #000;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            margin-top: 8px;
+            box-shadow: 0 4px 15px rgba(255, 154, 158, 0.3);
+        }
+
+        .premium-badge svg {
+            margin-right: 6px;
+        }
+
+        .cards-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 24px;
+            width: 100%;
+            max-width: 1200px;
+            perspective: 1000px;
+        }
+
+        .weather-card {
+            width: 280px;
+            height: 380px;
+            background: var(--card-bg);
+            border-radius: 24px;
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3);
+            padding: 24px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.6s var(--ease-out-quint);
+            transform-style: preserve-3d;
+            will-change: transform;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .weather-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,0.1), rgba(255,255,255,0));
+        }
+
+        .weather-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .weather-title {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            position: relative;
+            z-index: 2;
+            display: flex;
+            align-items: center;
+        }
+
+        .weather-icon {
+            margin-right: 10px;
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .weather-details {
+            position: absolute;
+            bottom: 24px;
+            left: 24px;
+            right: 24px;
+            z-index: 2;
+        }
+
+        .temperature {
+            font-size: 48px;
+            font-weight: 300;
+            margin-bottom: 4px;
+            background: linear-gradient(90deg, #ffffff, #d1e9ff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .location {
+            font-size: 16px;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .location svg {
+            margin-right: 6px;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .stat {
+            display: flex;
+            align-items: center;
+        }
+
+        .stat svg {
+            margin-right: 6px;
+        }
+
+        /* Wind animations */
+        .wind-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            overflow: hidden;
+        }
+
+        .wind-cloud {
+            position: absolute;
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 50%;
+            filter: blur(1px);
+            opacity: 0;
+            animation-timing-function: var(--ease-out-quint);
+        }
+
+        .wind-cloud-1 {
+            width: 80px;
+            height: 40px;
+            top: 80px;
+            left: -90px;
+            animation: windMove 12s linear infinite;
+        }
+
+        .wind-cloud-2 {
+            width: 100px;
+            height: 50px;
+            top: 140px;
+            left: -110px;
+            animation: windMove 15s linear infinite 3s;
+        }
+
+        .wind-cloud-3 {
+            width: 60px;
+            height: 30px;
+            top: 200px;
+            left: -70px;
+            animation: windMove 10s linear infinite 1.5s;
+        }
+
+        .tree {
+            position: absolute;
+            bottom: 80px;
+            width: 24px;
+            background: linear-gradient(to bottom, #5a3e1f, #3a2713);
+            border-radius: 4px;
+            transform-origin: bottom center;
+        }
+
+        .tree-top {
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 36px solid transparent;
+            border-right: 36px solid transparent;
+            border-bottom: 80px solid #2e8b57;
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2));
+            transform-origin: bottom center;
+        }
+
+        .tree-1 {
+            left: 60px;
+            height: 80px;
+        }
+
+        .tree-1 .tree-top {
+            animation: sway 4.5s var(--ease-in-out-quint) infinite alternate;
+            border-bottom: 80px solid #3a5e3a;
+        }
+
+        .tree-2 {
+            left: 140px;
+            height: 100px;
+        }
+
+        .tree-2 .tree-top {
+            animation: sway 5s var(--ease-in-out-quint) infinite alternate-reverse;
+            border-bottom: 90px solid #3cb371;
+        }
+
+        .tree-3 {
+            left: 220px;
+            height: 60px;
+        }
+
+        .tree-3 .tree-top {
+            animation: sway 3.5s var(--ease-in-out-quint) infinite alternate;
+            border-bottom: 70px solid #228b22;
+        }
+
+        @keyframes windMove {
+            0% {
+                transform: translateX(0);
+                opacity: 0;
+            }
+            20% {
+                opacity: 0.8;
+            }
+            80% {
+                opacity: 0.8;
+            }
+            100% {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+        }
+
+        @keyframes sway {
+            0% {
+                transform: translateX(-50%) rotate(-8deg);
+                filter: brightness(1);
+            }
+            50% {
+                filter: brightness(1.1);
+            }
+            100% {
+                transform: translateX(-50%) rotate(8deg);
+                filter: brightness(1);
+            }
+        }
+
+        /* Rain animations */
+        .rain-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            overflow: hidden;
+        }
+
+        .raindrop {
+            position: absolute;
+            background: linear-gradient(to bottom, rgba(200, 230, 255, 0.9), rgba(174, 194, 224, 0.9));
+            width: 2px;
+            height: 18px;
+            border-radius: 0 0 8px 8px;
+            filter: blur(0.5px);
+            animation: rainFall linear infinite;
+            transform-origin: top;
+        }
+
+        .puddle {
+            position: absolute;
+            bottom: 80px;
+            background: radial-gradient(ellipse at center, rgba(100, 149, 237, 0.4) 0%, rgba(100, 149, 237, 0) 70%);
+            border-radius: 50%;
+            animation: puddleGrow 5s var(--ease-out-quint) infinite;
+            filter: blur(1px);
+        }
+
+        .puddle-1 {
+            width: 40px;
+            height: 12px;
+            left: 60px;
+        }
+
+        .puddle-2 {
+            width: 50px;
+            height: 15px;
+            left: 150px;
+            animation-delay: 1.2s;
+        }
+
+        .puddle-3 {
+            width: 35px;
+            height: 10px;
+            left: 220px;
+            animation-delay: 2.3s;
+        }
+
+        @keyframes rainFall {
+            0% {
+                transform: translateY(-20px) scaleY(1);
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+            }
+            90% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(300px) scaleY(1.2);
+                opacity: 0;
+            }
+        }
+
+        @keyframes puddleGrow {
+            0% {
+                transform: scale(0.7);
+                opacity: 0;
+            }
+            30% {
+                opacity: 0.6;
+            }
+            100% {
+                transform: scale(1.5);
+                opacity: 0;
+            }
+        }
+
+        /* Sun animations */
+        .sun-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            overflow: hidden;
+        }
+
+        .sun {
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            background: radial-gradient(circle, #ffde59 0%, #ffae42 70%);
+            border-radius: 50%;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            box-shadow: 0 0 60px #ffae42, 0 0 100px rgba(255, 174, 66, 0.3);
+            filter: blur(0.5px);
+            animation: sunPulse 4s var(--ease-in-out-quint) infinite alternate;
+        }
+
+        .sun-ray {
+            position: absolute;
+            background: linear-gradient(to right, rgba(255, 215, 0, 0.8), rgba(255, 215, 0, 0));
+            height: 4px;
+            width: 100px;
+            top: 50%;
+            left: 50%;
+            transform-origin: left center;
+            filter: blur(1px);
+            animation: sunGlow 4s var(--ease-in-out-quint) infinite alternate;
+        }
+
+        .sun-halo {
+            position: absolute;
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            top: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: radial-gradient(circle, rgba(255, 174, 66, 0.1) 0%, rgba(255, 174, 66, 0) 70%);
+            animation: haloPulse 6s var(--ease-in-out-quint) infinite alternate;
+        }
+
+        @keyframes sunPulse {
+            0% {
+                transform: translateX(-50%) scale(1);
+                box-shadow: 0 0 60px #ffae42, 0 0 100px rgba(255, 174, 66, 0.3);
+            }
+            100% {
+                transform: translateX(-50%) scale(1.05);
+                box-shadow: 0 0 80px #ffae42, 0 0 120px rgba(255, 174, 66, 0.4);
+            }
+        }
+
+        @keyframes sunGlow {
+            0% {
+                opacity: 0.7;
+                width: 100px;
+            }
+            100% {
+                opacity: 1;
+                width: 120px;
+            }
+        }
+
+        @keyframes haloPulse {
+            0% {
+                transform: translateX(-50%) scale(1);
+                opacity: 0.3;
+            }
+            100% {
+                transform: translateX(-50%) scale(1.1);
+                opacity: 0.5;
+            }
+        }
+
+        /* Snow animations */
+        .snow-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            overflow: hidden;
+        }
+
+        .snowflake {
+            position: absolute;
+            color: white;
+            font-size: 14px;
+            animation: snowFall linear infinite;
+            opacity: 0;
+            filter: blur(0.5px);
+            text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+        }
+
+        .snow-accumulation {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 0;
+            background: linear-gradient(to bottom, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.6));
+            border-radius: 0 0 24px 24px;
+            animation: snowAccumulate 12s var(--ease-in-out-quint) infinite;
+            filter: blur(1px);
+        }
+
+        @keyframes snowFall {
+            0% {
+                transform: translateY(-20px) rotate(0deg) scale(0.5);
+                opacity: 0;
+            }
+            10% {
+                opacity: 0.8;
+            }
+            90% {
+                opacity: 0.8;
+            }
+            100% {
+                transform: translateY(300px) rotate(360deg) scale(1);
+                opacity: 0;
+            }
+        }
+
+        @keyframes snowAccumulate {
+            0% {
+                height: 0;
+                opacity: 0;
+            }
+            20% {
+                opacity: 1;
+            }
+            50% {
+                height: 30px;
+                opacity: 1;
+            }
+            80% {
+                opacity: 1;
+            }
+            100% {
+                height: 0;
+                opacity: 0;
+            }
+        }
+
+        /* Floating particles */
+        .particle {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            filter: blur(1px);
+            animation: float linear infinite;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .cards-container {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .weather-card {
+                width: 100%;
+                max-width: 320px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1 class="app-title">SkyVue Weather</h1>
+        <p class="app-subtitle">Hyper-accurate forecasts with stunning visuals</p>
+        <div class="premium-badge">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" fill="currentColor"/>
+            </svg>
+            PREMIUM
+        </div>
+    </div>
+    
+    <div class="cards-container">
+        <!-- Wind Card -->
+        <div class="weather-card" id="wind-card">
+            <div class="weather-title">
+                <div class="weather-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M2 15H18.5C19.8807 15 21 13.8807 21 12.5C21 11.1193 19.8807 10 18.5 10C18.3288 10 18.1616 10.0172 18 10.05M9 5H15.5C16.8807 5 18 6.11929 18 7.5C18 8.88071 16.8807 10 15.5 10H2M12 20H16.5C17.8807 20 19 18.8807 19 17.5C19 16.1193 17.8807 15 16.5 15C16.3288 15 16.1616 15.0172 16 15.05" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                Windy
+            </div>
+            <div class="wind-container">
+                <div class="wind-cloud wind-cloud-1"></div>
+                <div class="wind-cloud wind-cloud-2"></div>
+                <div class="wind-cloud wind-cloud-3"></div>
+                <div class="tree tree-1">
+                    <div class="tree-top"></div>
+                </div>
+                <div class="tree tree-2">
+                    <div class="tree-top"></div>
+                </div>
+                <div class="tree tree-3">
+                    <div class="tree-top"></div>
+                </div>
+            </div>
+            <div class="weather-details">
+                <div class="temperature">14°</div>
+                <div class="location">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 12.5C13.1046 12.5 14 11.6046 14 10.5C14 9.39543 13.1046 8.5 12 8.5C10.8954 8.5 10 9.39543 10 10.5C10 11.6046 10.8954 12.5 12 12.5Z" stroke="currentColor" stroke-width="2"/>
+                        <path d="M12 21C14 18 20 14.4183 20 10C20 5.58172 16.4183 2 12 2C7.58172 2 4 5.58172 4 10C4 14.4183 10 18 12 21Z" stroke="currentColor" stroke-width="2"/>
+                    </svg>
+                    Pacific Highlands
+                </div>
+                <div class="stats">
+                    <div class="stat">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 2V4M12 20V22M4 12H2M6.31412 6.31412L4.8999 4.8999M17.6859 6.31412L19.1001 4.8999M6.31412 17.69L4.8999 19.1042M17.6859 17.69L19.1001 19.1042M22 12H20M17 12C17 14.7614 14.7614 17 12 17C9.23858 17 7 14.7614 7 12C7 9.23858 9.23858 7 12 7C14.7614 7 17 9.23858 17 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        24 km/h
+                    </div>
+                    <div class="stat">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 15C13.6569 15 15 13.6569 15 12C15 10.3431 13.6569 9 12 9C10.3431 9 9 10.3431 9 12C9 13.6569 10.3431 15 12 15Z" stroke="currentColor" stroke-width="2"/>
+                            <path d="M19.4 15C19.2669 15.3016 19.1337 15.6031 19.0006 15.9047C18.5294 16.9512 18.0582 17.9977 17.587 19.0442C17.3585 19.5442 17.13 20.0442 16.9015 20.5442C16.6585 21.0787 16.0006 21.1402 15.7006 20.6402C15.2337 19.8531 14.7669 19.0659 14.3 18.2788C13.8331 17.4916 13.3663 16.7045 12.8994 15.9173C12.6329 15.4504 12.3663 14.9835 12.0998 14.5166C11.8333 14.0497 11.5667 13.5828 11.3002 13.1159C10.8333 12.3288 10.3664 11.5416 9.89953 10.7545C9.43265 9.96735 8.96578 9.18019 8.4989 8.39304C8.3006 8.06844 8.3006 7.63156 8.4989 7.30696C8.7274 6.93196 9.2006 6.85312 9.5006 7.15312C10.2337 7.88624 10.9669 8.61936 11.7 9.35248C12.4331 10.0856 13.1663 10.8187 13.8994 11.5518C14.6326 12.285 15.3657 13.0181 16.0989 13.7512C16.832 14.4844 17.5652 15.2175 18.2983 15.9506C18.5983 16.2506 18.6983 16.7531 19.4 15Z" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                        72% humidity
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Rain Card -->
+        <div class="weather-card" id="rain-card">
+            <div class="weather-title">
+                <div class="weather-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M8 13V15M12 13V17M16 13V15M3 15.803C3 15.803 4.5 13 8 13C11.5 13 13 15.803 13 15.803C13 15.803 14.5 13 18 13C21.5 13 23 15.803 23 15.803M3 10.803C3 10.803 4.5 8 8 8C11.5 8 13 10.803 13 10.803C13 10.803 14.5 8 18 8C21.5 8 23 10.803 23 10.803" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                Rain
+            </div>
+            <div class="rain-container"></div>
+            <div class="weather-details">
+                <div class="temperature">9°</div>
+                <div class="location">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 12.5C13.1046 12.5 14 11.6046 14 10.5C14 9.39543 13.1046 8.5 12 8.5C10.8954 8.5 10 9.39543 10 10.5C10 11.6046 10.8954 12.5 12 12.5Z" stroke="currentColor" stroke-width="2"/>
+                        <path d="M12 21C14 18 20 14.4183 20 10C20 5.58172 16.4183 2 12 2C7.58172 2 4 5.58172 4 10C4 14.4183 10 18 12 21Z" stroke="currentColor" stroke-width="2"/>
+                    </svg>
+                    Emerald Valley
+                </div>
+                <div class="stats">
+                    <div class="stat">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 2V4M12 20V22M4 12H2M6.31412 6.31412L4.8999 4.8999M17.6859 6.31412L19.1001 4.8999M6.31412 17.69L4.8999 19.1042M17.6859 17.69L19.1001 19.1042M22 12H20M17 12C17 14.7614 14.7614 17 12 17C9.23858 17 7 14.7614 7 12C7 9.23858 9.23858 7 12 7C14.7614 7 17 9.23858 17 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        12 km/h
+                    </div>
+                    <div class="stat">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 15C13.6569 15 15 13.6569 15 12C15 10.3431 13.6569 9 12 9C10.3431 9 9 10.3431 9 12C9 13.6569 10.3431 15 12 15Z" stroke="currentColor" stroke-width="2"/>
+                            <path d="M19.4 15C19.2669 15.3016 19.1337 15.6031 19.0006 15.9047C18.5294 16.9512 18.0582 17.9977 17.587 19.0442C17.3585 19.5442 17.13 20.0442 16.9015 20.5442C16.6585 21.0787 16.0006 21.1402 15.7006 20.6402C15.2337 19.8531 14.7669 19.0659 14.3 18.2788C13.8331 17.4916 13.3663 16.7045 12.8994 15.9173C12.6329 15.4504 12.3663 14.9835 12.0998 14.5166C11.8333 14.0497 11.5667 13.5828 11.3002 13.1159C10.8333 12.3288 10.3664 11.5416 9.89953 10.7545C9.43265 9.96735 8.96578 9.18019 8.4989 8.39304C8.3006 8.06844 8.3006 7.63156 8.4989 7.30696C8.7274 6.93196 9.2006 6.85312 9.5006 7.15312C10.2337 7.88624 10.9669 8.61936 11.7 9.35248C12.4331 10.0856 13.1663 10.8187 13.8994 11.5518C14.6326 12.285 15.3657 13.0181 16.0989 13.7512C16.832 14.4844 17.5652 15.2175 18.2983 15.9506C18.5983 16.2506 18.6983 16.7531 19.4 15Z" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                        92% humidity
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sun Card -->
+        <div class="weather-card" id="sun-card">
+            <div class="weather-title">
+                <div class="weather-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2V4M12 20V22M4 12H2M6.31412 6.31412L4.8999 4.8999M17.6859 6.31412L19.1001 4.8999M6.31412 17.69L4.8999 19.1042M17.6859 17.69L19.1001 19.1042M22 12H20M17 12C17 14.7614 14.7614 17 12 17C9.23858 17 7 14.7614 7 12C7 9.23858 9.23858 7 12 7C14.7614 7 17 9.23858 17 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                Sunny
+            </div>
+            <div class="sun-container">
+                <div class="sun-halo"></div>
+                <div class="sun"></div>
+            </div>
+            <div class="weather-details">
+                <div class="temperature">28°</div>
+                <div class="location">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 12.5C13.1046 12.5 14 11.6046 14 10.5C14 9.39543 13.1046 8.5 12 8.5C10.8954 8.5 10 9.39543 10 10.5C10 11.6046 10.8954 12.5 12 12.5Z" stroke="currentColor" stroke-width="2"/>
+                        <path d="M12 21C14 18 20 14.4183 20 10C20 5.58172 16.4183 2 12 2C7.58172 2 4 5.58172 4 10C4 14.4183 10 18 12 21Z" stroke="currentColor" stroke-width="2"/>
+                    </svg>
+                    Golden Coast
+                </div>
+                <div class="stats">
+                    <div class="stat">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 2V4M12 20V22M4 12H2M6.31412 6.31412L4.8999 4.8999M17.6859 6.31412L19.1001 4.8999M6.31412 17.69L4.8999 19.1042M17.6859 17.69L19.1001 19.1042M22 12H20M17 12C17 14.7614 14.7614 17 12 17C9.23858 17 7 14.7614 7 12C7 9.23858 9.23858 7 12 7C14.7614 7 17 9.23858 17 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        8 km/h
+                    </div>
+                    <div class="stat">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 15C13.6569 15 15 13.6569 15 12C15 10.3431 13.6569 9 12 9C10.3431 9 9 10.3431 9 12C9 13.6569 10.3431 15 12 15Z" stroke="currentColor" stroke-width="2"/>
+                            <path d="M19.4 15C19.2669 15.3016 19.1337 15.6031 19.0006 15.9047C18.5294 16.9512 18.0582 17.9977 17.587 19.0442C17.3585 19.5442 17.13 20.0442 16.9015 20.5442C16.6585 21.0787 16.0006 21.1402 15.7006 20.6402C15.2337 19.8531 14.7669 19.0659 14.3 18.2788C13.8331 17.4916 13.3663 16.7045 12.8994 15.9173C12.6329 15.4504 12.3663 14.9835 12.0998 14.5166C11.8333 14.0497 11.5667 13.5828 11.3002 13.1159C10.8333 12.3288 10.3664 11.5416 9.89953 10.7545C9.43265 9.96735 8.96578 9.18019 8.4989 8.39304C8.3006 8.06844 8.3006 7.63156 8.4989 7.30696C8.7274 6.93196 9.2006 6.85312 9.5006 7.15312C10.2337 7.88624 10.9669 8.61936 11.7 9.35248C12.4331 10.0856 13.1663 10.8187 13.8994 11.5518C14.6326 12.285 15.3657 13.0181 16.0989 13.7512C16.832 14.4844 17.5652 15.2175 18.2983 15.9506C18.5983 16.2506 18.6983 16.7531 19.4 15Z" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                        42% humidity
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Snow Card -->
+        <div class="weather-card" id="snow-card">
+            <div class="weather-title">
+                <div class="weather-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 3V5M12 19V21M5 12H3M7.31412 7.31412L5.8999 5.8999M16.6859 7.31412L18.1001 5.8999M7.31412 16.69L5.8999 18.1042M16.6859 16.69L18.1001 18.1042M21 12H19M8 12H16M12 8V16M15 9L9 15M15 15L9 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                Snow
+            </div>
+            <div class="snow-container">
+                <div class="snow-accumulation"></div>
+            </div>
+            <div class="weather-details">
+                <div class="temperature">-3°</div>
+                <div class="location">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 12.5C13.1046 12.5 14 11.6046 14 10.5C14 9.39543 13.1046 8.5 12 8.5C10.8954 8.5 10 9.39543 10 10.5C10 11.6046 10.8954 12.5 12 12.5Z" stroke="currentColor" stroke-width="2"/>
+                        <path d="M12 21C14 18 20 14.4183 20 10C20 5.58172 16.4183 2 12 2C7.58172 2 4 5.58172 4 10C4 14.4183 10 18 12 21Z" stroke="currentColor" stroke-width="2"/>
+                    </svg>
+                    Frostpeak
+                </div>
+                <div class="stats">
+                    <div class="stat">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 2V4M12 20V22M4 12H2M6.31412 6.31412L4.8999 4.8999M17.6859 6.31412L19.1001 4.8999M6.31412 17.69L4.8999 19.1042M17.6859 17.69L19.1001 19.1042M22 12H20M17 12C17 14.7614 14.7614 17 12 17C9.23858 17 7 14.7614 7 12C7 9.23858 9.23858 7 12 7C14.7614 7 17 9.23858 17 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        18 km/h
+                    </div>
+                    <div class="stat">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 15C13.6569 15 15 13.6569 15 12C15 10.3431 13.6569 9 12 9C10.3431 9 9 10.3431 9 12C9 13.6569 10.3431 15 12 15Z" stroke="currentColor" stroke-width="2"/>
+                            <path d="M19.4 15C19.2669 15.3016 19.1337 15.6031 19.0006 15.9047C18.5294 16.9512 18.0582 17.9977 17.587 19.0442C17.3585 19.5442 17.13 20.0442 16.9015 20.5442C16.6585 21.0787 16.0006 21.1402 15.7006 20.6402C15.2337 19.8531 14.7669 19.0659 14.3 18.2788C13.8331 17.4916 13.3663 16.7045 12.8994 15.9173C12.6329 15.4504 12.3663 14.9835 12.0998 14.5166C11.8333 14.0497 11.5667 13.5828 11.3002 13.1159C10.8333 12.3288 10.3664 11.5416 9.89953 10.7545C9.43265 9.96735 8.96578 9.18019 8.4989 8.39304C8.3006 8.06844 8.3006 7.63156 8.4989 7.30696C8.7274 6.93196 9.2006 6.85312 9.5006 7.15312C10.2337 7.88624 10.9669 8.61936 11.7 9.35248C12.4331 10.0856 13.1663 10.8187 13.8994 11.5518C14.6326 12.285 15.3657 13.0181 16.0989 13.7512C16.832 14.4844 17.5652 15.2175 18.2983 15.9506C18.5983 16.2506 18.6983 16.7531 19.4 15Z" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                        88% humidity
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize weather elements
+        document.addEventListener('DOMContentLoaded', function() {
+            createRaindrops();
+            createSunRays();
+            createSnowflakes();
+            createParticles();
+            
+            // Add subtle parallax effect to cards
+            const cards = document.querySelectorAll('.weather-card');
+            document.addEventListener('mousemove', (e) => {
+                const x = e.clientX / window.innerWidth;
+                const y = e.clientY / window.innerHeight;
+                
+                cards.forEach((card, index) => {
+                    const offsetX = (x - 0.5) * 20;
+                    const offsetY = (y - 0.5) * 20;
+                    const delay = index * 0.1;
+                    
+                    setTimeout(() => {
+                        card.style.transform = `translateY(-8px) rotateY(${offsetX}deg) rotateX(${-offsetY}deg)`;
+                    }, delay * 1000);
+                });
+            });
+        });
+
+        // Create raindrops
+        function createRaindrops() {
+            const rainContainer = document.querySelector('.rain-container');
+            for (let i = 0; i < 60; i++) {
+                const raindrop = document.createElement('div');
+                raindrop.className = 'raindrop';
+                raindrop.style.left = Math.random() * 100 + '%';
+                raindrop.style.animationDuration = (Math.random() * 0.7 + 0.5) + 's';
+                raindrop.style.animationDelay = Math.random() * 3 + 's';
+                raindrop.style.opacity = Math.random() * 0.5 + 0.5;
+                rainContainer.appendChild(raindrop);
+            }
+        }
+
+        // Create sun rays
+        function createSunRays() {
+            const sunContainer = document.querySelector('.sun-container');
+            for (let i = 0; i < 12; i++) {
+                const ray = document.createElement('div');
+                ray.className = 'sun-ray';
+                ray.style.transform = `translateX(-50%) rotate(${i * 30}deg)`;
+                ray.style.animationDelay = (i * 0.1) + 's';
+                sunContainer.appendChild(ray);
+            }
+        }
+
+        // Create snowflakes
+        function createSnowflakes() {
+            const snowContainer = document.querySelector('.snow-container');
+            const snowflakeSymbols = ['❄', '❅', '❆', '✻', '✼'];
+            
+            for (let i = 0; i < 50; i++) {
+                const snowflake = document.createElement('div');
+                snowflake.className = 'snowflake';
+                snowflake.innerHTML = snowflakeSymbols[Math.floor(Math.random() * snowflakeSymbols.length)];
+                snowflake.style.left = Math.random() * 100 + '%';
+                snowflake.style.animationDuration = (Math.random() * 5 + 5) + 's';
+                snowflake.style.animationDelay = Math.random() * 5 + 's';
+                snowflake.style.opacity = Math.random() * 0.7 + 0.3;
+                snowflake.style.fontSize = (Math.random() * 10 + 10) + 'px';
+                snowContainer.appendChild(snowflake);
+            }
+        }
+
+        // Create floating particles for premium feel
+        function createParticles() {
+            const cards = document.querySelectorAll('.weather-card');
+            
+            cards.forEach(card => {
+                for (let i = 0; i < 10; i++) {
+                    const particle = document.createElement('div');
+                    particle.className = 'particle';
+                    particle.style.width = Math.random() * 4 + 1 + 'px';
+                    particle.style.height = particle.style.width;
+                    particle.style.left = Math.random() * 100 + '%';
+                    particle.style.top = Math.random() * 100 + '%';
+                    particle.style.animationDuration = (Math.random() * 20 + 10) + 's';
+                    particle.style.animationDelay = Math.random() * 5 + 's';
+                    card.appendChild(particle);
+                }
+            });
+        }
+
+        // Add interactive hover effects
+        const cards = document.querySelectorAll('.weather-card');
+        cards.forEach(card => {
+            card.addEventListener('mouseenter', () => {
+                card.style.transform = 'translateY(-12px) scale(1.03)';
+                card.style.boxShadow = '0 20px 50px rgba(0, 0, 0, 0.5)';
+            });
+            
+            card.addEventListener('mouseleave', () => {
+                card.style.transform = 'translateY(-8px) scale(1.02)';
+                card.style.boxShadow = '0 16px 40px rgba(0, 0, 0, 0.4)';
+            });
+        });
+    </script>
+</body>
+</html>

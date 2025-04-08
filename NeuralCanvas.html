@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neural Canvas Pro | AI 图像生成</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#f5f7ff',
+                            100: '#ebf0ff',
+                            200: '#d6e0ff',
+                            300: '#b3c6ff',
+                            400: '#809dff',
+                            500: '#4d73ff',
+                            600: '#1a49ff',
+                            700: '#0032e6',
+                            800: '#0029b3',
+                            900: '#001f80',
+                        },
+                        slate: {
+                            50: '#f8fafc',
+                            100: '#f1f5f9',
+                            200: '#e2e8f0',
+                            300: '#cbd5e1',
+                            400: '#94a3b8',
+                            500: '#64748b',
+                            600: '#475569',
+                            700: '#334155',
+                            800: '#1e293b',
+                            900: '#0f172a',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif']
+                    },
+                    boxShadow: {
+                        'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.15)',
+                        'inner-glass': 'inset 0 4px 30px rgba(255, 255, 255, 0.1)'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+      
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+      
+        .glass-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+      
+        .text-gradient {
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+      
+        .smooth-transition {
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+      
+        .floating {
+            animation: floating 6s ease-in-out infinite;
+        }
+      
+        @keyframes floating {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+      
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+      
+        ::-webkit-scrollbar-track {
+            background: rgba(241, 241, 241, 0.5);
+            border-radius: 10px;
+        }
+      
+        ::-webkit-scrollbar-thumb {
+            background: rgba(199, 210, 254, 0.5);
+            border-radius: 10px;
+        }
+      
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(165, 180, 252, 0.7);
+        }
+      
+        .pro-badge {
+            background: linear-gradient(135deg, #4d73ff 0%, #1a49ff 100%);
+            box-shadow: 0 2px 8px rgba(26, 73, 255, 0.2);
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-slate-50 to-slate-100 min-h-screen p-4 md:p-8">
+    <div class="max-w-7xl mx-auto">
+        <!-- 顶部导航栏 -->
+        <div class="flex justify-between items-center mb-8">
+            <div class="flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-primary-600" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd" />
+                </svg>
+                <span class="ml-2 text-xl font-semibold text-slate-800">Neural Canvas</span>
+                <span class="ml-2 pro-badge text-xs text-white px-2 py-1 rounded-full">PRO</span>
+            </div>
+            <div class="flex items-center space-x-4">
+                <button class="text-sm font-medium text-slate-600 hover:text-primary-600">帮助中心</button>
+                <button class="text-sm font-medium text-slate-600 hover:text-primary-600">API</button>
+                <button class="flex items-center space-x-1">
+                    <span class="text-sm font-medium text-slate-600">John Doe</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+      
+        <!-- 主标题区域 -->
+        <div class="text-center mb-12">
+            <h1 class="text-4xl md:text-5xl font-bold text-gradient bg-gradient-to-r from-primary-600 to-primary-800 mb-3">AI 图像生成引擎</h1>
+            <p class="text-lg text-slate-600 max-w-2xl mx-auto">使用世界上最先进的 AI 技术，将您的想象力转化为令人惊叹的视觉艺术作品。</p>
+            <div class="mt-4 flex justify-center space-x-2">
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-primary-100 text-primary-800">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                    </svg>
+                    Stable Diffusion 3
+                </span>
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-800">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                    </svg>
+                    4K 超分辨率
+                </span>
+            </div>
+        </div>
+    
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- 左侧控制面板 -->
+            <div class="lg:col-span-1 glass-card rounded-2xl shadow-glass p-6 smooth-transition hover:shadow-glass-lg">
+                <div class="space-y-6">
+                    <div>
+                        <div class="flex justify-between items-center mb-2">
+                            <label class="block text-sm font-medium text-slate-700">创意描述</label>
+                            <button class="text-xs text-primary-600 hover:text-primary-800 flex items-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                                    <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                                    <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd" />
+                                </svg>
+                                提示技巧
+                            </button>
+                        </div>
+                        <textarea 
+                            id="prompt-input"
+                            class="w-full h-40 px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary-500 focus:border-primary-300 resize-none shadow-sm bg-white/70 text-slate-800 placeholder-slate-400 smooth-transition"
+                            placeholder="例如：'一位未来主义武士站在霓虹灯下的东京街头，赛博朋克风格，8K超高清，电影灯光...'"></textarea>
+                        <div class="flex justify-between mt-1">
+                            <span class="text-xs text-slate-400">越详细越好</span>
+                            <span class="text-xs text-slate-400">0/500</span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-2">艺术风格</label>
+                            <select class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white/70 text-slate-800 smooth-transition">
+                                <option>超现实摄影</option>
+                                <option>数字油画</option>
+                                <option>铅笔素描</option>
+                                <option>动漫插画</option>
+                                <option>赛博朋克</option>
+                                <option>低多边形</option>
+                                <option>水彩艺术</option>
+                                <option>概念艺术</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-2">模型版本</label>
+                            <select class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white/70 text-slate-800 smooth-transition">
+                                <option>SD 3.0 (最新)</option>
+                                <option>SD XL 1.0</option>
+                                <option>Midjourney v6</option>
+                                <option>DALL·E 3</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-2">图像尺寸</label>
+                        <div class="grid grid-cols-3 gap-2">
+                            <button class="py-2 px-2 rounded-xl bg-primary-100 text-primary-800 hover:bg-primary-200 transition-colors text-sm font-medium flex flex-col items-center">
+                                <span>正方形</span>
+                                <span class="text-xs opacity-70">512×512</span>
+                            </button>
+                            <button class="py-2 px-2 rounded-xl bg-slate-100 text-slate-800 hover:bg-slate-200 transition-colors text-sm font-medium flex flex-col items-center">
+                                <span>正方形</span>
+                                <span class="text-xs opacity-70">768×768</span>
+                            </button>
+                            <button class="py-2 px-2 rounded-xl bg-slate-100 text-slate-800 hover:bg-slate-200 transition-colors text-sm font-medium flex flex-col items-center">
+                                <span>正方形</span>
+                                <span class="text-xs opacity-70">1024×1024</span>
+                            </button>
+                            <button class="py-2 px-2 rounded-xl bg-slate-100 text-slate-800 hover:bg-slate-200 transition-colors text-sm font-medium flex flex-col items-center">
+                                <span>横版</span>
+                                <span class="text-xs opacity-70">1024×768</span>
+                            </button>
+                            <button class="py-2 px-2 rounded-xl bg-slate-100 text-slate-800 hover:bg-slate-200 transition-colors text-sm font-medium flex flex-col items-center">
+                                <span>竖版</span>
+                                <span class="text-xs opacity-70">768×1024</span>
+                            </button>
+                            <button class="py-2 px-2 rounded-xl bg-slate-100 text-slate-800 hover:bg-slate-200 transition-colors text-sm font-medium flex flex-col items-center">
+                                <span>宽屏</span>
+                                <span class="text-xs opacity-70">1920×1080</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="pt-2">
+                        <div class="flex space-x-3">
+                            <button class="flex-1 bg-gradient-to-r from-primary-600 to-primary-800 hover:from-primary-700 hover:to-primary-900 text-white py-3.5 rounded-xl shadow-md hover:shadow-lg transition-all active:scale-[0.98] flex items-center justify-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd" />
+                                </svg>
+                                生成图像
+                            </button>
+                            <button class="px-5 py-3.5 border border-slate-200 rounded-xl bg-white/70 text-slate-700 hover:bg-slate-100 transition-colors flex items-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z" />
+                                    <path fill-rule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                        </div>
+                        <p class="text-xs text-slate-500 mt-2 flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1 text-primary-500" viewBox="0 0 20 20                             fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
+                            </svg>
+                            预计生成时间: 15-45秒 (使用Pro加速)
+                        </p>
+                    </div>
+
+                    <!-- 高级设置 -->
+                    <div class="border-t border-slate-200 pt-4 mt-4">
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="text-sm font-medium text-slate-700">高级设置</h3>
+                            <button class="text-xs text-primary-600 hover:text-primary-800">重置默认</button>
+                        </div>
+                        <div class="space-y-4">
+                            <div>
+                                <div class="flex justify-between mb-1">
+                                    <label class="text-sm text-slate-700">生成步骤 <span class="text-slate-400">(质量)</span></label>
+                                    <span class="text-xs font-medium text-primary-600">30</span>
+                                </div>
+                                <input type="range" min="20" max="50" value="30" class="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-primary-600">
+                                <div class="flex justify-between text-xs text-slate-500 mt-1">
+                                    <span>快速</span>
+                                    <span>平衡</span>
+                                    <span>精细</span>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between mb-1">
+                                    <label class="text-sm text-slate-700">创意度</label>
+                                    <span class="text-xs font-medium text-primary-600">7.5</span>
+                                </div>
+                                <input type="range" min="2.0" max="15.0" step="0.5" value="7.5" class="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-primary-600">
+                                <div class="flex justify-between text-xs text-slate-500 mt-1">
+                                    <span>精确</span>
+                                    <span>平衡</span>
+                                    <span>创意</span>
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <label class="text-sm text-slate-700">种子值</label>
+                                <div class="flex items-center space-x-2">
+                                    <input type="number" class="w-20 px-3 py-2 rounded-lg border border-slate-200 text-sm" placeholder="随机">
+                                    <button class="p-2 rounded-lg bg-slate-100 hover:bg-slate-200">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-600" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+              
+                <!-- 历史记录 -->
+                <div class="mt-6 border-t border-slate-200 pt-4">
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="text-sm font-medium text-slate-700">历史生成</h3>
+                        <button class="text-xs text-primary-600 hover:text-primary-800">查看全部</button>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="relative group">
+                            <div class="aspect-square bg-slate-100 rounded-lg overflow-hidden">
+                                <img src="https://source.unsplash.com/random/300x300/?cyberpunk" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                            </div>
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-2">
+                                <p class="text-white text-xs truncate">霓虹都市</p>
+                            </div>
+                        </div>
+                        <div class="relative group">
+                            <div class="aspect-square bg-slate-100 rounded-lg overflow-hidden">
+                                <img src="https://source.unsplash.com/random/300x300/?fantasy" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                            </div>
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-2">
+                                <p class="text-white text-xs truncate">魔法森林</p>
+                            </div>
+                        </div>
+                        <div class="relative group">
+                            <div class="aspect-square bg-slate-100 rounded-lg overflow-hidden">
+                                <img src="https://source.unsplash.com/random/300x300/?portrait" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                            </div>
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-2">
+                                <p class="text-white text-xs truncate">未来战士</p>
+                            </div>
+                        </div>
+                        <div class="relative group">
+                            <div class="aspect-square bg-slate-100 rounded-lg overflow-hidden">
+                                <img src="https://source.unsplash.com/random/300x300/?landscape" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                            </div>
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-2">
+                                <p class="text-white text-xs truncate">雪山日出</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧结果区域 -->
+            <div class="lg:col-span-2">
+                <div class="glass-card rounded-2xl shadow-glass p-6 h-full smooth-transition hover:shadow-glass-lg">
+                    <div class="h-[600px] flex flex-col">
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="text-lg font-semibold text-slate-800">生成结果</h2>
+                            <div class="flex space-x-2">
+                                <button class="px-3 py-1.5 rounded-lg border border-slate-200 bg-white/70 text-slate-700 hover:bg-slate-100 text-sm flex items-center smooth-transition">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                    </svg>
+                                    下载
+                                </button>
+                                <button class="px-3 py-1.5 rounded-lg border border-slate-200 bg-white/70 text-slate-700 hover:bg-slate-100 text-sm flex items-center smooth-transition">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                                    </svg>
+                                    分享
+                                </button>
+                                <button class="px-3 py-1.5 rounded-lg bg-primary-600 text-white hover:bg-primary-700 text-sm flex items-center smooth-transition">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                    </svg>
+                                    编辑
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 图像显示区域 -->
+                        <div class="flex-1 flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl border-2 border-dashed border-slate-300 overflow-hidden relative">
+                            <div id="image-result" class="w-full h-full flex items-center justify-center">
+                                <div class="text-center p-6 max-w-md">
+                                    <div class="floating mx-auto w-24 h-24 bg-gradient-to-r from-primary-100 to-primary-200 rounded-full flex items-center justify-center mb-4">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                        </svg>
+                                    </div>
+                                    <h3 class="mt-2 text-xl font-medium text-slate-800">释放您的创造力</h3>
+                                    <p class="mt-2 text-sm text-slate-600">输入您的创意描述，我们的AI将在30秒内为您生成令人惊叹的艺术作品。</p>
+                                    <div class="mt-6">
+                                        <button class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-gradient-to-r from-primary-600 to-primary-800 hover:from-primary-700 hover:to-primary-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 smooth-transition">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                                                <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                                                <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd" />
+                                            </svg>
+                                            查看示例库
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-sm text-xs text-slate-700 flex items-center">
+                                <div class="w-2 h-2 rounded-full bg-primary-600 mr-2 animate-pulse"></div>
+                                准备生成
+                            </div>
+                        </div>
+
+                        <!-- 生成信息 -->
+                        <div class="mt-4 pt-4 border-t border-slate-200">
+                            <div class="grid grid-cols-3 gap-4 text-sm">
+                                <div>
+                                    <p class="text-slate-500">生成时间</p>
+                                    <p class="text-slate-800 font-medium">--</p>
+                                </div>
+                                <div>
+                                    <p class="text-slate-500">模型版本</p>
+                                    <p class="text-slate-800 font-medium">Stable Diffusion 3.0</p>
+                                </div>
+                                <div>
+                                    <p class="text-slate-500">分辨率</p>
+                                    <p class="text-slate-800 font-medium">--</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 底部信息 -->
+        <div class="mt-12 pt-8 border-t border-slate-200 text-center">
+            <div class="flex justify-center space-x-6">
+                <a href="#" class="text-sm text-slate-600 hover:text-primary-600">服务条款</a>
+                <a href="#" class="text-sm text-slate-600 hover:text-primary-600">隐私政策</a>
+                <a href="#" class="text-sm text-slate-600 hover:text-primary-600">API文档</a>
+                <a href="#" class="text-sm text-slate-600 hover:text-primary-600">联系我们</a>
+            </div>
+            <p class="mt-4 text-xs text-slate-500">© 2023 Neural Canvas Pro. 保留所有权利。</p>
+        </div>
+    </div>
+
+    <script>
+        // 交互逻辑
+        document.addEventListener('DOMContentLoaded', function() {
+            // 尺寸选择按钮
+            const sizeButtons = document.querySelectorAll('.grid.grid-cols-3.gap-2 button, .grid.grid-cols-2.gap-2 button');
+            sizeButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    sizeButtons.forEach(btn => {
+                        btn.classList.remove('bg-primary-100', 'text-primary-800');
+                        btn.classList.add('bg-slate-100', 'text-slate-800');
+                    });
+                    this.classList.remove('bg-slate-100', 'text-slate-800');
+                    this.classList.add('bg-primary-100', 'text-primary-800');
+                });
+            });
+
+            // 滑块动态显示值
+            const sliders = document.querySelectorAll('input[type="range"]');
+            sliders.forEach(slider => {
+                const valueDisplay = slider.nextElementSibling.querySelector('span:nth-child(2)');
+                slider.addEventListener('input', function() {
+                    valueDisplay.textContent = this.value;
+                });
+            });
+
+            // 生成按钮动画
+            const generateBtn = document.querySelector('button:contains("生成图像")');
+            generateBtn.addEventListener('click', function() {
+                this.classList.add('animate-pulse');
+                setTimeout(() => {
+                    this.classList.remove('animate-pulse');
+                }, 2000);
+            });
+        });
+    </script>
+</body>
+</html>

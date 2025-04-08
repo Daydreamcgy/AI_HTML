@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>精美连连看</title>
+    <style>
+        body {
+            font-family: 'Arial Rounded MT Bold', 'Arial', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+      
+        .game-container {
+            background-color: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            width: fit-content;
+            margin-bottom: 20px;
+        }
+      
+        h1 {
+            color: #3a4a6d;
+            text-align: center;
+            margin-bottom: 10px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+        }
+      
+        .game-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            font-size: 18px;
+            color: #3a4a6d;
+        }
+      
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(8, 60px);
+            grid-template-rows: repeat(8, 60px);
+            gap: 5px;
+            background-color: #e0e5ec;
+            padding: 10px;
+            border-radius: 10px;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+      
+        .tile {
+            width: 60px;
+            height: 60px;
+            background-color: white;
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 3px 3px 6px rgba(0, 0, 0, 0.1), 
+                        -3px -3px 6px rgba(255, 255, 255, 0.8);
+            position: relative;
+            overflow: hidden;
+        }
+      
+        .tile:hover {
+            transform: translateY(-2px);
+            box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.1), 
+                        -5px -5px 10px rgba(255, 255, 255, 0.8);
+        }
+      
+        .tile.selected {
+            background-color: #ffeb3b;
+            transform: scale(0.95);
+            box-shadow: inset 2px 2px 5px rgba(0, 0, 0, 0.1);
+        }
+      
+        .tile.matched {
+            visibility: hidden;
+            animation: fadeOut 0.5s ease-out;
+        }
+      
+        @keyframes fadeOut {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(0); opacity: 0; }
+        }
+      
+        .tile::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0) 50%);
+            border-radius: 8px;
+        }
+      
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+        }
+      
+        button {
+            background: linear-gradient(135deg, #3a4a6d 0%, #1e2a4a 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+      
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15);
+        }
+      
+        button:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+      
+        .path {
+            position: absolute;
+            background-color: rgba(76, 175, 80, 0.5);
+            z-index: 10;
+        }
+      
+        .emoji-set {
+            font-size: 28px;
+        }
+      
+        .timer, .score {
+            font-weight: bold;
+            background: linear-gradient(135deg, #e0e5ec 0%, #c3cfe2 100%);
+            padding: 5px 15px;
+            border-radius: 50px;
+            box-shadow: inset 2px 2px 5px rgba(0, 0, 0, 0.1), 
+                        inset -2px -2px 5px rgba(255, 255, 255, 0.8);
+        }
+      
+        .game-over {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+      
+        .game-over.show {
+            opacity: 1;
+            pointer-events: all;
+        }
+      
+        .game-over-content {
+            background-color: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+        }
+      
+        .game-over.show .game-over-content {
+            transform: scale(1);
+        }
+      
+        .game-over h2 {
+            color: #3a4a6d;
+            margin-top: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>✨ 精美连连看 ✨</h1>
+        <div class="game-info">
+            <div class="timer">时间: <span id="time">60</span>秒</div>
+            <div class="score">分数: <span id="score">0</span></div>
+        </div>
+        <div class="game-board" id="gameBoard"></div>
+        <div class="controls">
+            <button id="newGameBtn">新游戏</button>
+            <button id="hintBtn">提示</button>
+            <button id="shuffleBtn">重排</button>
+        </div>
+    </div>
+  
+    <div class="game-over" id="gameOver">
+        <div class="game-over-content">
+            <h2>游戏结束!</h2>
+            <p>你的最终得分: <span id="finalScore">0</span></p>
+            <button id="playAgainBtn">再玩一次</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 游戏配置
+            const config = {
+                rows: 8,
+                cols: 8,
+                timeLimit: 60, // 60秒
+                emojiSets: [
+                    ['🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼'],
+                    ['🍎', '🍐', '🍊', '🍋', '🍌', '🍉', '🍇', '🍓'],
+                    ['⚽', '🏀', '🏈', '⚾', '🎾', '🏐', '🏉', '🎱'],
+                    ['🚗', '🚕', '🚙', '🚌', '🚎', '🏎', '🚓', '🚑'],
+                    ['❤️', '💛', '💚', '💙', '💜', '🖤', '🤍', '🤎'],
+                    ['🌞', '🌝', '🌛', '🌜', '🌚', '🌕', '🌖', '🌗']
+                ]
+            };
+          
+            // 游戏状态
+            let state = {
+                board: [],
+                selectedTile: null,
+                matchedPairs: 0,
+                score: 0,
+                timeLeft: config.timeLimit,
+                timer: null,
+                isGameOver: false,
+                currentEmojiSet: []
+            };
+          
+            // DOM元素
+            const gameBoard = document.getElementById('gameBoard');
+            const timeDisplay = document.getElementById('time');
+            const scoreDisplay = document.getElementById('score');
+            const newGameBtn = document.getElementById('newGameBtn');
+            const hintBtn = document.getElementById('hintBtn');
+            const shuffleBtn = document.getElementById('shuffleBtn');
+            const gameOverModal = document.getElementById('gameOver');
+            const finalScoreDisplay = document.getElementById('finalScore');
+            const playAgainBtn = document.getElementById('playAgainBtn');
+          
+            // 初始化游戏
+            function initGame() {
+                // 重置游戏状态
+                state.board = [];
+                state.selectedTile = null;
+                state.matchedPairs = 0;
+                state.score = 0;
+                state.timeLeft = config.timeLimit;
+                state.isGameOver = false;
+              
+                // 清空游戏板
+                gameBoard.innerHTML = '';
+              
+                // 更新显示
+                updateDisplay();
+              
+                // 随机选择一组emoji
+                state.currentEmojiSet = [...config.emojiSets[Math.floor(Math.random() * config.emojiSets.length)]];
+              
+                // 创建游戏板
+                createBoard();
+              
+                // 开始计时器
+                if (state.timer) clearInterval(state.timer);
+                state.timer = setInterval(updateTimer, 1000);
+              
+                // 隐藏游戏结束模态框
+                gameOverModal.classList.remove('show');
+            }
+          
+            // 创建游戏板
+            function createBoard() {
+                // 创建配对数组 (每个emoji出现两次)
+                let pairs = [];
+                for (let i = 0; i < (config.rows * config.cols) / 2; i++) {
+                    const emojiIndex = i % state.currentEmojiSet.length;
+                    pairs.push(state.currentEmojiSet[emojiIndex]);
+                    pairs.push(state.currentEmojiSet[emojiIndex]);
+                }
+              
+                // 随机打乱数组
+                pairs = shuffleArray(pairs);
+              
+                // 创建游戏板二维数组
+                for (let row = 0; row < config.rows; row++) {
+                    state.board[row] = [];
+                    for (let col = 0; col < config.cols; col++) {
+                        const index = row * config.cols + col;
+                        state.board[row][col] = {
+                            emoji: pairs[index],
+                            matched: false,
+                            element: null
+                        };
+                      
+                        // 创建DOM元素
+                        const tile = document.createElement('div');
+                        tile.className = 'tile';
+                        tile.innerHTML = `<span class="emoji-set">${pairs[index]}</span>`;
+                        tile.dataset.row = row;
+                        tile.dataset.col = col;
+                      
+                        tile.addEventListener('click', () => handleTileClick(row, col));
+                      
+                        gameBoard.appendChild(tile);
+                        state.board[row][col].element = tile;
+                    }
+                }
+            }
+          
+            // 处理方块点击
+            function handleTileClick(row, col) {
+                if (state.isGameOver) return;
+              
+                const tile = state.board[row][col];
+              
+                // 如果已经匹配或是已选中的方块，则忽略
+                if (tile.matched || (state.selectedTile && state.selectedTile.row === row && state.selectedTile.col === col)) {
+                    return;
+                }
+              
+                // 如果没有选中的方块，选中当前方块
+                if (!state.selectedTile) {
+                    state.selectedTile = { row, col };
+                    tile.element.classList.add('selected');
+                    return;
+                }
+              
+                // 如果已经有一个选中的方块，检查是否匹配
+                const selectedTile = state.board[state.selectedTile.row][state.selectedTile.col];
+              
+                // 检查是否相同
+                if (tile.emoji === selectedTile.emoji) {
+                    // 检查是否可以连接
+                    const path = findPath(
+                        { row: state.selectedTile.row, col: state.selectedTile.col },
+                        { row, col }
+                    );
+                  
+                    if (path) {
+                        // 显示连接路径
+                        showPath(path);
+                      
+                        // 匹配成功
+                        setTimeout(() => {
+                            // 移除路径
+                            clearPath();
+                          
+                            // 标记为已匹配
+                            tile.matched = true;
+                            selectedTile.matched = true;
+                          
+                            // 添加动画类
+                            tile.element.classList.add('matched');
+                            selectedTile.element.classList.add('matched');
+                          
+                            // 更新状态
+                            state.matchedPairs++;
+                            state.score += 10;
+                            updateDisplay();
+                          
+                            // 重置选中的方块
+                            state.selectedTile = null;
+                          
+                            // 检查游戏是否结束
+                            checkGameOver();
+                        }, 300);
+                    } else {
+                        // 不能连接，取消选中
+                        selectedTile.element.classList.remove('selected');
+                        state.selectedTile = null;
+                    }
+                } else {
+                    // 不匹配，取消选中
+                    selectedTile.element.classList.remove('selected');
+                    state.selectedTile = null;
+                }
+            }
+          
+            // 查找连接路径 (使用广度优先搜索)
+            function findPath(start, end) {
+                // 如果直接相连
+                if (isDirectlyConnected(start, end)) {
+                    return [start, end];
+                }
+              
+                // 使用BFS查找路径
+                const queue = [{ position: start, path: [start], turns: 0 }];
+                const visited = new Set();
+                visited.add(`${start.row},${start.col}`);
+              
+                while (queue.length > 0) {
+                    const current = queue.shift();
+                  
+                    // 检查四个方向
+                    const directions = [
+                        { row: -1, col: 0 }, // 上
+                        { row: 1, col: 0 },  // 下
+                        { row: 0, col: -1 }, // 左
+                        { row: 0, col: 1 }   // 右
+                    ];
+                  
+                    for (const dir of directions) {
+                        let newRow = current.position.row + dir.row;
+                        let newCol = current.position.col + dir.col;
+                      
+                        // 沿着当前方向移动，直到遇到障碍物
+                        while (true) {
+                            // 检查是否到达终点
+                            if (newRow === end.row && newCol === end.col) {
+                                return [...current.path, { row: newRow, col: newCol }];
+                            }
+                          
+                            // 检查是否超出边界
+                            if (newRow < 0 || newRow >= config.rows || newCol < 0 || newCol >= config.cols) {
+                                break;
+                            }
+                          
+                            // 检查是否是空白或起点/终点
+                            const isBlank = state.board[newRow][newCol].matched;
+                            const isStartOrEnd = (newRow === start.row && newCol === start.col) || 
+                                                (newRow === end.row && newCol === end.col);
+                          
+                            if (!isBlank && !isStartOrEnd) {
+                                break; // 遇到障碍物
+                            }
+                          
+                            // 计算转弯次数
+                            let turns = current.turns;
+                            if (current.path.length > 1) {
+                                const last = current.path[current.path.length - 1];
+                                const secondLast = current.path[current.path.length - 2];
+                              
+                                // 检查方向是否改变
+                                const prevDirRow = last.row - secondLast.row;
+                                const prevDirCol = last.col - secondLast.col;
+                              
+                                if (prevDirRow !== dir.row || prevDirCol !== dir.col) {
+                                    turns++;
+                                    if (turns > 2) break; // 超过2次转弯
+                                }
+                            }
+                          
+                            const key = `${newRow},${newCol}`;
+                            if (!visited.has(key)) {
+                                visited.add(key);
+                                queue.push({
+                                    position: { row: newRow, col: newCol },
+                                    path: [...current.path, { row: newRow, col: newCol }],
+                                    turns: turns
+                                });
+                            }
+                          
+                            // 继续沿当前方向移动
+                            newRow += dir.row;
+                            newCol += dir.col;
+                        }
+                    }
+                }
+              
+                return null; // 没有找到路径
+            }
+          
+            // 检查是否直接相连
+            function isDirectlyConnected(a, b) {
+                // 同一行
+                if (a.row === b.row) {
+                    const minCol = Math.min(a.col, b.col);
+                    const maxCol = Math.max(a.col, b.col);
+                  
+                    // 检查中间是否有障碍物
+                    for (let col = minCol + 1; col < maxCol; col++) {
+                        if (!state.board[a.row][col].matched) {
+                            return false;
+                        }
+                    }
+                    return true;
+                }
+              
+                // 同一列
+                if (a.col === b.col) {
+                    const minRow = Math.min(a.row, b.row);
+                    const maxRow = Math.max(a.row, b.row);
+                  
+                    // 检查中间是否有障碍物
+                    for (let row = minRow + 1; row < maxRow; row++) {
+                        if (!state.board[row][a.col].matched) {
+                            return false;
+                        }
+                    }
+                    return true;
+                }
+              
+                return false;
+            }
+          
+            // 显示连接路径
+            function showPath(path) {
+                // 清除之前的路径
+                clearPath();
+                
+                // 绘制新路径
+                for (let i = 0; i < path.length - 1; i++) {
+                    const start = path[i];
+                    const end = path[i + 1];
+                    
+                    const startTile = state.board[start.row][start.col].element;
+                    const endTile = state.board[end.row][end.col].element;
+                    
+                    const startRect = startTile.getBoundingClientRect();
+                    const endRect = endTile.getBoundingClientRect();
+                    
+                    const pathElement = document.createElement('div');
+                    pathElement.className = 'path';
+                    
+                    // 水平连接
+                    if (start.row === end.row) {
+                        const left = Math.min(startRect.left, endRect.left) + startRect.width / 2;
+                        const width = Math.abs(startRect.left - endRect.left);
+                        
+                        pathElement.style.left = `${left}px`;
+                        pathElement.style.top = `${startRect.top + startRect.height / 2 - 2}px`;
+                        pathElement.style.width = `${width}px`;
+                        pathElement.style.height = '4px';
+                    } 
+                    // 垂直连接
+                    else if (start.col === end.col) {
+                        const top = Math.min(startRect.top, endRect.top) + startRect.height / 2;
+                        const height = Math.abs(startRect.top - endRect.top);
+                        
+                        pathElement.style.left = `${startRect.left + startRect.width / 2 - 2}px`;
+                        pathElement.style.top = `${top}px`;
+                        pathElement.style.width = '4px';
+                        pathElement.style.height = `${height}px`;
+                    }
+                    
+                    document.body.appendChild(pathElement);
+                }
+            }
+            
+            // 清除连接路径
+            function clearPath() {
+                const paths = document.querySelectorAll('.path');
+                paths.forEach(path => path.remove());
+            }
+            
+            // 更新显示
+            function updateDisplay() {
+                timeDisplay.textContent = state.timeLeft;
+                scoreDisplay.textContent = state.score;
+            }
+            
+            // 更新计时器
+            function updateTimer() {
+                state.timeLeft--;
+                updateDisplay();
+                
+                if (state.timeLeft <= 0) {
+                    endGame();
+                }
+            }
+            
+            // 检查游戏是否结束
+            function checkGameOver() {
+                // 检查是否所有方块都已匹配
+                const allMatched = state.board.every(row => 
+                    row.every(tile => tile.matched)
+                );
+                
+                if (allMatched) {
+                    // 额外奖励分数
+                    state.score += state.timeLeft * 2;
+                    updateDisplay();
+                    endGame();
+                }
+            }
+            
+            // 结束游戏
+            function endGame() {
+                clearInterval(state.timer);
+                state.isGameOver = true;
+                
+                // 显示游戏结束模态框
+                finalScoreDisplay.textContent = state.score;
+                gameOverModal.classList.add('show');
+            }
+            
+            // 提示功能
+            function showHint() {
+                // 查找可以连接的一对
+                for (let row1 = 0; row1 < config.rows; row1++) {
+                    for (let col1 = 0; col1 < config.cols; col1++) {
+                        if (state.board[row1][col1].matched) continue;
+                        
+                        for (let row2 = 0; row2 < config.rows; row2++) {
+                            for (let col2 = 0; col2 < config.cols; col2++) {
+                                // 跳过已匹配或相同的方块
+                                if (state.board[row2][col2].matched || 
+                                    (row1 === row2 && col1 === col2)) continue;
+                                
+                                // 检查是否是相同的emoji
+                                if (state.board[row1][col1].emoji === state.board[row2][col2].emoji) {
+                                    // 检查是否可以连接
+                                    const path = findPath(
+                                        { row: row1, col: col1 },
+                                        { row: row2, col: col2 }
+                                    );
+                                    
+                                    if (path) {
+                                        // 高亮显示这对方块
+                                        state.board[row1][col1].element.classList.add('selected');
+                                        state.board[row2][col2].element.classList.add('selected');
+                                        
+                                        // 3秒后取消高亮
+                                        setTimeout(() => {
+                                            state.board[row1][col1].element.classList.remove('selected');
+                                            state.board[row2][col2].element.classList.remove('selected');
+                                        }, 3000);
+                                        
+                                        return;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                alert('没有可连接的方块对了！');
+            }
+            
+            // 重排功能
+            function shuffleBoard() {
+                if (state.isGameOver) return;
+                
+                // 收集未匹配的方块
+                const unmatchedTiles = [];
+                for (let row = 0; row < config.rows; row++) {
+                    for (let col = 0; col < config.cols; col++) {
+                        if (!state.board[row][col].matched) {
+                            unmatchedTiles.push(state.board[row][col].emoji);
+                        }
+                    }
+                }
+                
+                // 打乱顺序
+                const shuffled = shuffleArray(unmatchedTiles);
+                
+                // 重新分配
+                let index = 0;
+                for (let row = 0; row < config.rows; row++) {
+                    for (let col = 0; col < config.cols; col++) {
+                        if (!state.board[row][col].matched) {
+                            state.board[row][col].emoji = shuffled[index++];
+                            state.board[row][col].element.querySelector('.emoji-set').textContent = shuffled[index-1];
+                        }
+                    }
+                }
+                
+                // 取消选中状态
+                if (state.selectedTile) {
+                    const { row, col } = state.selectedTile;
+                    state.board[row][col].element.classList.remove('selected');
+                    state.selectedTile = null;
+                }
+                
+                // 扣分
+                state.score = Math.max(0, state.score - 5);
+                updateDisplay();
+            }
+            
+            // 辅助函数：打乱数组
+            function shuffleArray(array) {
+                const newArray = [...array];
+                for (let i = newArray.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+                }
+                return newArray;
+            }
+            
+            // 事件监听
+            newGameBtn.addEventListener('click', initGame);
+            hintBtn.addEventListener('click', showHint);
+            shuffleBtn.addEventListener('click', shuffleBoard);
+            playAgainBtn.addEventListener('click', initGame);
+            
+            // 初始化游戏
+            initGame();
+        });
+    </script>
+</body>
+</html>

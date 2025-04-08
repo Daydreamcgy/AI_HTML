@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>写实风格钢琴模拟器</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            font-family: 'Arial', sans-serif;
+            overflow: hidden;
+        }
+        
+        .piano-container {
+            perspective: 1000px;
+        }
+        
+        .piano {
+            display: flex;
+            position: relative;
+            transform-style: preserve-3d;
+            transform: rotateX(5deg);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            border-radius: 5px;
+            background: #111;
+            padding: 10px;
+        }
+        
+        .white-key {
+            width: 60px;
+            height: 250px;
+            background: linear-gradient(to bottom, #fff 0%, #f5f5f5 100%);
+            border: 1px solid #ddd;
+            border-radius: 0 0 8px 8px;
+            cursor: pointer;
+            position: relative;
+            z-index: 1;
+            box-shadow: inset 0 -5px 10px rgba(0, 0, 0, 0.1);
+            transition: transform 0.1s, box-shadow 0.1s;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            padding-bottom: 15px;
+            box-sizing: border-box;
+            user-select: none;
+        }
+        
+        .white-key:active, .white-key.active {
+            transform: translateY(3px);
+            box-shadow: inset 0 -2px 5px rgba(0, 0, 0, 0.2);
+            background: linear-gradient(to bottom, #e6e6e6 0%, #e0e0e0 100%);
+        }
+        
+        .white-key::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(to right, rgba(255,255,255,0.8), rgba(255,255,255,0));
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .black-key {
+            width: 36px;
+            height: 150px;
+            background: linear-gradient(to bottom, #222 0%, #000 100%);
+            position: absolute;
+            border-radius: 0 0 5px 5px;
+            cursor: pointer;
+            z-index: 2;
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.5);
+            transition: transform 0.1s, box-shadow 0.1s;
+            user-select: none;
+        }
+        
+        .black-key:active, .black-key.active {
+            transform: translateY(3px);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+            background: linear-gradient(to bottom, #111 0%, #000 100%);
+        }
+        
+        .black-key::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(to right, rgba(100,100,100,0.8), rgba(100,100,100,0));
+            border-radius: 5px 5px 0 0;
+        }
+        
+        .key-label {
+            color: #333;
+            font-size: 14px;
+            font-weight: bold;
+            text-shadow: 0 1px 1px rgba(255,255,255,0.5);
+        }
+        
+        .black-key .key-label {
+            color: #ccc;
+            text-shadow: 0 1px 1px rgba(0,0,0,0.5);
+            position: absolute;
+            bottom: 10px;
+            left: 0;
+            right: 0;
+            text-align: center;
+        }
+        
+        .note-float {
+            position: absolute;
+            color: rgba(255, 215, 0, 0.9);
+            font-size: 24px;
+            font-weight: bold;
+            text-shadow: 0 0 5px rgba(255, 215, 0, 0.7);
+            z-index: 10;
+            pointer-events: none;
+            animation: floatUp 1.5s ease-out forwards;
+        }
+        
+        @keyframes floatUp {
+            0% {
+                transform: translateY(0);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-100px);
+                opacity: 0;
+            }
+        }
+        
+        .piano-leg {
+            position: absolute;
+            width: 20px;
+            height: 50px;
+            background: linear-gradient(to bottom, #333 0%, #111 100%);
+            bottom: -50px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        
+        .leg-left {
+            left: 30px;
+        }
+        
+        .leg-right {
+            right: 30px;
+        }
+        
+        .pedal {
+            position: absolute;
+            width: 100px;
+            height: 20px;
+            background: #222;
+            bottom: -70px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-radius: 3px;
+            box-shadow: 0 5px 10px rgba(0,0,0,0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="piano-container">
+        <div class="piano" id="piano">
+            <!-- 琴键将通过JavaScript动态生成 -->
+        </div>
+        <div class="piano-leg leg-left"></div>
+        <div class="piano-leg leg-right"></div>
+        <div class="pedal"></div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const piano = document.getElementById('piano');
+            const whiteKeys = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
+            const blackKeys = ['C#', 'D#', 'F#', 'G#', 'A#'];
+            
+            // 创建白键
+            whiteKeys.forEach((note, index) => {
+                const whiteKey = document.createElement('div');
+                whiteKey.className = 'white-key';
+                whiteKey.dataset.note = note;
+                whiteKey.innerHTML = `<div class="key-label">${note}</div>`;
+                
+                whiteKey.addEventListener('mousedown', () => playNote(note, whiteKey));
+                whiteKey.addEventListener('mouseup', () => stopNote(note));
+                whiteKey.addEventListener('mouseleave', () => stopNote(note));
+                
+                piano.appendChild(whiteKey);
+                
+                // 创建黑键（在适当的位置）
+                if (index < 5 && index !== 2) { // 跳过E和B之间的黑键
+                    const blackKey = document.createElement('div');
+                    blackKey.className = 'black-key';
+                    const blackNote = blackKeys[index > 2 ? index - 1 : index];
+                    blackKey.dataset.note = blackNote;
+                    blackKey.style.left = `${(index + 1) * 60 - 18}px`;
+                    blackKey.innerHTML = `<div class="key-label">${blackNote}</div>`;
+                    
+                    blackKey.addEventListener('mousedown', () => playNote(blackNote, blackKey));
+                    blackKey.addEventListener('mouseup', () => stopNote(blackNote));
+                    blackKey.addEventListener('mouseleave', () => stopNote(blackNote));
+                    
+                    piano.appendChild(blackKey);
+                }
+            });
+            
+            // 音频上下文和振荡器存储
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillators = {};
+            
+            // 播放音符
+            function playNote(note, keyElement) {
+                if (oscillators[note]) return;
+                
+                keyElement.classList.add('active');
+                
+                // 创建漂浮的音符
+                createFloatingNote(note, keyElement);
+                
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.type = 'sine';
+                oscillator.frequency.value = getFrequency(note);
+                gainNode.gain.value = note.length > 1 ? 0.3 : 0.5; // 黑键音量稍低
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.start();
+                oscillators[note] = { oscillator, gainNode };
+            }
+            
+            // 创建漂浮的音符
+            function createFloatingNote(note, keyElement) {
+                const rect = keyElement.getBoundingClientRect();
+                const noteElement = document.createElement('div');
+                noteElement.className = 'note-float';
+                noteElement.textContent = note;
+                noteElement.style.left = `${rect.left + rect.width/2 - 12}px`;
+                noteElement.style.top = `${rect.top - 20}px`;
+                
+                document.body.appendChild(noteElement);
+                
+                // 动画结束后移除元素
+                setTimeout(() => {
+                    noteElement.remove();
+                }, 1500);
+            }
+            
+            // 停止音符
+            function stopNote(note) {
+                if (!oscillators[note]) return;
+                
+                const keyElement = document.querySelector(`[data-note="${note}"]`);
+                if (keyElement) keyElement.classList.remove('active');
+                
+                // 淡出效果
+                oscillators[note].gainNode.gain.setValueAtTime(
+                    oscillators[note].gainNode.gain.value,
+                    audioContext.currentTime
+                );
+                oscillators[note].gainNode.gain.exponentialRampToValueAtTime(
+                    0.001,
+                    audioContext.currentTime + 0.05
+                );
+                
+                setTimeout(() => {
+                    oscillators[note].oscillator.stop();
+                    delete oscillators[note];
+                }, 50);
+            }
+            
+            // 获取音符频率
+            function getFrequency(note) {
+                const notes = {
+                    'C': 261.63, 'C#': 277.18,
+                    'D': 293.66, 'D#': 311.13,
+                    'E': 329.63,
+                    'F': 349.23, 'F#': 369.99,
+                    'G': 392.00, 'G#': 415.30,
+                    'A': 440.00, 'A#': 466.16,
+                    'B': 493.88
+                };
+                return notes[note] || 440;
+            }
+            
+            // 键盘事件监听
+            document.addEventListener('keydown', (e) => {
+                const keyMap = {
+                    'a': 'C', 'w': 'C#',
+                    's': 'D', 'e': 'D#',
+                    'd': 'E',
+                    'f': 'F', 't': 'F#',
+                    'g': 'G', 'y': 'G#',
+                    'h': 'A', 'u': 'A#',
+                    'j': 'B'
+                };
+                
+                if (keyMap[e.key.toLowerCase()]) {
+                    const keyElement = document.querySelector(`[data-note="${keyMap[e.key.toLowerCase()]}"]`);
+                    if (keyElement) playNote(keyMap[e.key.toLowerCase()], keyElement);
+                }
+            });
+            
+            document.addEventListener('keyup', (e) => {
+                const keyMap = {
+                    'a': 'C', 'w': 'C#',
+                    's': 'D', 'e': 'D#',
+                    'd': 'E',
+                    'f': 'F', 't': 'F#',
+                    'g': 'G', 'y': 'G#',
+                    'h': 'A', 'u': 'A#',
+                    'j': 'B'
+                };
+                
+                if (keyMap[e.key.toLowerCase()]) {
+                    stopNote(keyMap[e.key.toLowerCase()]);
+                }
+            });
+            
+            // 触摸设备支持
+            document.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                const touch = e.touches[0];
+                const element = document.elementFromPoint(touch.clientX, touch.clientY);
+                if (element && (element.classList.contains('white-key') || element.classList.contains('black-key'))) {
+                    const note = element.dataset.note;
+                    playNote(note, element);
+                }
+            });
+            
+            document.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                for (const note in oscillators) {
+                    stopNote(note);
+                }
+            });
+        });
+    </script>
+</body>
+</html>

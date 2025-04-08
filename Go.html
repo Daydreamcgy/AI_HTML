@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>围棋棋盘</title>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', '微软雅黑', Arial, sans-serif;
+            background-color: #f5f0e8;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f9f4ec;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+            padding: 30px;
+            max-width: 800px;
+            width: 100%;
+        }
+
+        .title {
+            color: #7d4427;
+            font-size: 2rem;
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .board-container {
+            position: relative;
+            margin-bottom: 20px;
+            border: 8px solid #c19a6b;
+            border-radius: 5px;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        #board {
+            display: block;
+            background-color: #e2c08c;
+            border-radius: 2px;
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            max-width: 600px;
+            gap: 20px;
+        }
+
+        .player-status {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.2rem;
+            padding: 12px;
+            border-radius: 8px;
+            background-color: #fff;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+            margin-bottom: 10px;
+        }
+
+        #currentPlayer {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        #playerIndicator {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            margin-left: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .player-indicator.black {
+            background-color: #000;
+            border: 1px solid #000000;
+        }
+
+        .player-indicator.white {
+            background-color: #fff;
+            border: 1px solid #ccc;
+        }
+
+        .button-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            width: 100%;
+        }
+
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background-color: #8b5a2b;
+            color: white;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        button:hover {
+            background-color: #7d4427;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        button:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .save-load-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        button.save {
+            background-color: #2c7873;
+        }
+
+        button.save:hover {
+            background-color: #1e5350;
+        }
+
+        button.load {
+            background-color: #6a6b83;
+        }
+
+        button.load:hover {
+            background-color: #4c4d60;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+
+            #board {
+                width: 100%;
+                height: auto;
+            }
+
+            .button-group,
+            .save-load-group {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Toast 通知样式 */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .toast {
+            background-color: rgba(0, 0, 0, 0.75);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            min-width: 200px;
+            max-width: 300px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            margin-bottom: 10px;
+            opacity: 0;
+            transform: translateY(-20px);
+            transition: all 0.3s ease;
+        }
+
+        .toast.success {
+            background-color: rgba(46, 125, 50, 0.9);
+            border-left: 4px solid #2e7d32;
+        }
+
+        .toast.info {
+            background-color: rgba(2, 119, 189, 0.9);
+            border-left: 4px solid #0277bd;
+        }
+
+        .toast.warning {
+            background-color: rgba(255, 143, 0, 0.9);
+            border-left: 4px solid #ff8f00;
+        }
+
+        .toast.error {
+            background-color: rgba(211, 47, 47, 0.9);
+            border-left: 4px solid #d32f2f;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .toast-icon {
+            margin-right: 12px;
+            font-size: 20px;
+        }
+
+        .toast-message {
+            flex: 1;
+            font-size: 14px;
+        }
+
+        .toast-progress {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 3px;
+            background-color: rgba(255, 255, 255, 0.7);
+            border-radius: 0 0 4px 4px;
+            width: 100%;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1 class="title">围棋游戏</h1>
+
+        <div class="board-container">
+            <canvas id="board" width="600" height="600"></canvas>
+        </div>
+
+        <div class="controls">
+            <div class="player-status">
+                <div id="currentPlayer">当前玩家: <div id="playerIndicator" class="player-indicator black"></div>
+                </div>
+            </div>
+
+            <div class="button-group">
+                <button onclick="undoMove()">悔棋</button>
+                <button onclick="resetBoard()">重置棋盘</button>
+                <button onclick="toggleMoveNumbers()">显示/隐藏手数</button>
+            </div>
+
+            <div class="save-load-group">
+                <button class="save" onclick="saveGame()">保存棋局</button>
+                <button class="load" onclick="loadGame()">加载棋局</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast通知容器 -->
+    <div class="toast-container" id="toastContainer"></div>
+    <script>
+        const canvas = document.getElementById('board');
+        const ctx = canvas.getContext('2d');
+        const size = 19;
+        const cellSize = 30;
+        const margin = 35;
+        let currentPlayer = 'black';
+        const stones = [];
+        // 新增变量
+        const boardHistory = []; // 用于记录棋盘历史状态
+        let gameOver = false;
+        let aiMode = false;
+        let timer = { black: 0, white: 0 };
+        let timerInterval;
+        // 在变量声明部分添加
+        let showNumbers = false; // 控制是否显示手数
+        let moveHistory = []; // 记录落子历史 [{x, y, color, moveNumber}, ...]
+
+        function drawBoard() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 1;
+
+            // 绘制网格线
+            for (let i = 0; i < size; i++) {
+                ctx.beginPath();
+                ctx.moveTo(margin + i * cellSize, margin);
+                ctx.lineTo(margin + i * cellSize, margin + (size - 1) * cellSize);
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.moveTo(margin, margin + i * cellSize);
+                ctx.lineTo(margin + (size - 1) * cellSize, margin + i * cellSize);
+                ctx.stroke();
+            }
+
+            // 绘制星位
+            const starPoints = getStarPoints(size);
+            ctx.fillStyle = '#000';
+            starPoints.forEach(point => {
+                ctx.beginPath();
+                ctx.arc(margin + point.x * cellSize, margin + point.y * cellSize, 3, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // 绘制棋盘的横纵坐标
+            ctx.font = '14px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = '#000';
+
+            // 绘制横坐标
+            for (let i = 0; i < size; i++) {
+                ctx.fillText(String.fromCharCode(65 + i), margin + i * cellSize, margin - 20);
+            }
+
+            // 绘制纵坐标
+            for (let i = 0; i < size; i++) {
+                ctx.fillText(size - i, margin - 20, margin + i * cellSize);
+            }
+        }
+
+        // 创建Toast函数
+        function showToast(message, type = 'info', duration = 3000) {
+            // 创建toast元素
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+
+            // 根据类型设置图标
+            let icon = '';
+            switch (type) {
+                case 'success':
+                    icon = '✓';
+                    break;
+                case 'info':
+                    icon = 'ℹ';
+                    break;
+                case 'warning':
+                    icon = '⚠';
+                    break;
+                case 'error':
+                    icon = '✕';
+                    break;
+                default:
+                    icon = 'ℹ';
+            }
+
+            // 设置内容
+            toast.innerHTML = `
+                <div class="toast-icon">${icon}</div>
+                <div class="toast-message">${message}</div>
+                <div class="toast-progress"></div>
+            `;
+
+            // 添加到容器
+            const container = document.getElementById('toastContainer');
+            container.appendChild(toast);
+
+            // 进度条动画
+            const progress = toast.querySelector('.toast-progress');
+            progress.style.transition = `width ${duration}ms linear`;
+
+            // 显示toast
+            setTimeout(() => {
+                toast.classList.add('show');
+                progress.style.width = '0';
+            }, 10);
+
+            // 自动关闭
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => {
+                    container.removeChild(toast);
+                }, 100);
+            }, duration);
+        }
+
+        // 实现显示/隐藏手数功能
+        function showMoveNumbers(show) {
+            showNumbers = show;
+            drawBoard();
+            drawStones(); // 重绘棋盘和棋子以显示或隐藏手数
+        }
+
+
+        function toggleMoveNumbers() {
+            showMoveNumbers(!showNumbers);
+        }
+
+        function getStarPoints(size) {
+            if (size === 19) {
+                return [
+                    { x: 3, y: 3 }, { x: 9, y: 3 }, { x: 15, y: 3 },
+                    { x: 3, y: 9 }, { x: 9, y: 9 }, { x: 15, y: 9 },
+                    { x: 3, y: 15 }, { x: 9, y: 15 }, { x: 15, y: 15 }
+                ];
+            }
+            return [];
+        }
+
+// 修改drawStones函数
+function drawStones() {
+    stones.forEach(stone => {
+        // 绘制棋子
+        ctx.beginPath();
+        ctx.arc(
+            margin + stone.x * cellSize,
+            margin + stone.y * cellSize,
+            cellSize / 2 - 2,
+            0,
+            Math.PI * 2
+        );
+        ctx.fillStyle = stone.color;
+        ctx.fill();
+        ctx.strokeStyle = '#000';
+        ctx.stroke();
+    });
+
+    // 如果启用了显示手数
+    if (showNumbers) {
+        moveHistory.forEach(move => {
+            const { x, y, color, moveNumber } = move;
+            ctx.fillStyle = color === 'black' ? '#fff' : '#000';
+            ctx.font = `${cellSize / 2.5}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(
+                moveNumber.toString(),
+                margin + x * cellSize,
+                margin + y * cellSize
+            );
+        });
+    }
+
+    
+    // 注意：删除了第二个循环，避免重复绘制
+}
+
+        function updateCurrentPlayer() {
+            const playerIndicator = document.getElementById('playerIndicator');
+            if (currentPlayer === 'black') {
+                playerIndicator.classList.remove('white');
+                playerIndicator.classList.add('black');
+            } else {
+                playerIndicator.classList.remove('black');
+                playerIndicator.classList.add('white');
+            }
+        }
+
+        function resetBoard() {
+            stones.length = 0;
+            currentPlayer = 'black';
+            drawBoard();
+            drawStones();
+            updateCurrentPlayer();
+        }
+
+        function saveGame() {
+            const gameData = {
+                stones: stones,
+                currentPlayer: currentPlayer
+            };
+            localStorage.setItem('goGame', JSON.stringify(gameData));
+            showToast('棋局已成功保存', 'success');
+        }
+
+        function loadGame() {
+            const gameData = JSON.parse(localStorage.getItem('goGame'));
+            if (gameData) {
+                stones.length = 0;
+                stones.push(...gameData.stones);
+                currentPlayer = gameData.currentPlayer;
+                drawBoard();
+                drawStones();
+                updateCurrentPlayer();
+                showToast('棋局已加载', 'info');
+            } else {
+                showToast('加载失败', 'error');
+            }
+        }
+
+        canvas.addEventListener('click', function (event) {
+    const rect = canvas.getBoundingClientRect();
+    const x = event.clientX - rect.left - margin;
+    const y = event.clientY - rect.top - margin;
+    const boardX = Math.round(x / cellSize);
+    const boardY = Math.round(y / cellSize);
+
+
+    if (boardX >= 0 && boardX < size && boardY >= 0 && boardY < size) {
+        if (!stones.some(stone => stone.x === boardX && stone.y === boardY)) {
+            // 保存当前状态到历史记录
+            boardHistory.push({
+                stones: [...stones],
+                currentPlayer: currentPlayer,
+                moveHistory: [...moveHistory] // 保存moveHistory
+            });
+
+            // 先放置棋子
+            stones.push({ x: boardX, y: boardY, color: currentPlayer });
+
+            // 记录手数
+            const moveNumber = moveHistory.length + 1;
+            moveHistory.push({ x: boardX, y: boardY, color: currentPlayer, moveNumber });
+
+            // 检查并执行提子
+            const capturedStones = checkCaptures(boardX, boardY, currentPlayer);
+
+            // 如果提子后自己也没气了，这是自杀步，不允许
+            const selfGroup = findConnectedStones(boardX, boardY, currentPlayer);
+            if (!hasLiberties(selfGroup) && capturedStones === 0) {
+                // 悔棋一步
+                undoMove();
+                showToast('此处不能落子：自杀步！');
+                return;
+            }
+
+            // 若有提子，可以显示提示
+            if (capturedStones > 0) {
+                showToast(`提子 ${capturedStones} 个！`);
+            }
+
+            // 更新玩家
+            currentPlayer = currentPlayer === 'black' ? 'white' : 'black';
+            drawBoard();
+            drawStones();
+            updateCurrentPlayer();
+        }
+    }
+});
+
+
+// 修改undoMove函数
+function undoMove() {
+    if (boardHistory.length > 0) {
+        const lastState = boardHistory.pop();
+        stones.length = 0;
+        stones.push(...lastState.stones);
+        currentPlayer = lastState.currentPlayer;
+        moveHistory = [...lastState.moveHistory]; // 恢复moveHistory
+        drawBoard();
+        drawStones();
+        updateCurrentPlayer();
+    } else {
+        showToast('无法悔棋，已经是最开始的状态', 'warning');
+    }
+}
+
+        /**
+ * 检查并执行提子
+ * @param {number} x - 刚下的棋子的x坐标
+ * @param {number} y - 刚下的棋子的y坐标
+ * @param {string} color - 刚下的棋子的颜色
+ * @returns {number} - 被提掉的棋子数量
+ */
+function checkCaptures(x, y, color) {
+    const oppositeColor = color === 'black' ? 'white' : 'black';
+    let capturedStones = 0;
+    
+    // 检查四个方向的邻居
+    const directions = [
+        {dx: 1, dy: 0},  // 右
+        {dx: -1, dy: 0}, // 左
+        {dx: 0, dy: 1},  // 下
+        {dx: 0, dy: -1}  // 上
+    ];
+    
+    // 对于每个方向，检查对方棋子是否无气
+    for (const dir of directions) {
+        const nx = x + dir.dx;
+        const ny = y + dir.dy;
+        
+        // 确保在棋盘范围内
+        if (nx >= 0 && nx < size && ny >= 0 && ny < size) {
+            // 找到邻居位置的棋子
+            const neighborStone = stones.find(s => s.x === nx && s.y === ny);
+            
+            // 如果存在对方颜色的棋子
+            if (neighborStone && neighborStone.color === oppositeColor) {
+                // 获取这个棋子所在的整个棋串
+                const group = findConnectedStones(nx, ny, oppositeColor);
+                
+                // 如果这个棋串没有气，则提掉
+                if (!hasLiberties(group)) {
+                    // 移除这个棋串中的所有棋子
+                    capturedStones += group.length;
+                    for (const stone of group) {
+                        const index = stones.findIndex(s => s.x === stone.x && s.y === stone.y);
+                        if (index !== -1) {
+                            stones.splice(index, 1);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    return capturedStones;
+}
+
+/**
+ * 寻找与给定棋子相连的所有同色棋子
+ * @param {number} x - 起始棋子的x坐标
+ * @param {number} y - 起始棋子的y坐标
+ * @param {string} color - 棋子颜色
+ * @returns {Array} - 连成一片的所有棋子数组
+ */
+function findConnectedStones(x, y, color) {
+    const visited = new Set(); // 使用集合记录已访问的坐标
+    const group = [];
+    const stack = [{x, y}];
+    
+    while (stack.length > 0) {
+        const current = stack.pop();
+        const key = `${current.x},${current.y}`;
+        
+        // 如果已经访问过，跳过
+        if (visited.has(key)) continue;
+        
+        // 标记为已访问
+        visited.add(key);
+        
+        // 检查当前位置是否有对应颜色的棋子
+        const stone = stones.find(s => s.x === current.x && s.y === current.y);
+        if (stone && stone.color === color) {
+            group.push({x: current.x, y: current.y});
+            
+            // 将四个方向的邻居加入栈中
+            const directions = [
+                {dx: 1, dy: 0},  // 右
+                {dx: -1, dy: 0}, // 左
+                {dx: 0, dy: 1},  // 下
+                {dx: 0, dy: -1}  // 上
+            ];
+            
+            for (const dir of directions) {
+                const nx = current.x + dir.dx;
+                const ny = current.y + dir.dy;
+                
+                // 确保在棋盘范围内
+                if (nx >= 0 && nx < size && ny >= 0 && ny < size) {
+                    stack.push({x: nx, y: ny});
+                }
+            }
+        }
+    }
+    
+    return group;
+}
+
+/**
+ * 检查一组棋子是否有气
+ * @param {Array} group - 一组相连的棋子
+ * @returns {boolean} - 是否有气
+ */
+function hasLiberties(group) {
+    const directions = [
+        {dx: 1, dy: 0},  // 右
+        {dx: -1, dy: 0}, // 左
+        {dx: 0, dy: 1},  // 下
+        {dx: 0, dy: -1}  // 上
+    ];
+    
+    // 记录已检查过的位置
+    const checked = new Set();
+    
+    for (const stone of group) {
+        for (const dir of directions) {
+            const nx = stone.x + dir.dx;
+            const ny = stone.y + dir.dy;
+            const key = `${nx},${ny}`;
+            
+            // 如果已经检查过这个位置，跳过
+            if (checked.has(key)) continue;
+            checked.add(key);
+            
+            // 确保在棋盘范围内
+            if (nx >= 0 && nx < size && ny >= 0 && ny < size) {
+                // 如果这个位置没有棋子，则有气
+                const hasStone = stones.some(s => s.x === nx && s.y === ny);
+                if (!hasStone) {
+                    return true;  // 找到一口气，返回true
+                }
+            }
+        }
+    }
+    
+    return false;  // 没有找到气，返回false
+}
+
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'u' || event.key === 'U') {
+                undoMove();
+            }
+        });
+
+        drawBoard();
+        updateCurrentPlayer();
+    </script>
+</body>
+
+</html>

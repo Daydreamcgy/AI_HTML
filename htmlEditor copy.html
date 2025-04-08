@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>分栏式HTML编辑器</title>
+    <style>
+        :root {
+            --bg-color: #f0f2f5;
+            --container-bg: #ffffff;
+            --border-color: #e1e4e8;
+            --text-color: #24292e;
+            --primary: #2188ff;
+            --primary-hover: #3196ff;
+            --secondary: #6a737d;
+            --secondary-hover: #7d878f;
+            --header-bg: #f6f8fa;
+            --shadow: 0 1px 15px rgba(27, 31, 35, 0.1);
+            --radius: 8px;
+            --code-bg: #fafbfc;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .app-container {
+            display: flex;
+            height: 100vh;
+            padding: 16px;
+            gap: 16px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ed 100%);
+        }
+        
+        .editor-panel, .preview-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: var(--container-bg);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+        }
+        
+        .panel-header {
+            padding: 12px 16px;
+            background-color: var(--header-bg);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .panel-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-color);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .panel-content {
+            flex: 1;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .editor-wrapper {
+            height: 100%;
+            display: flex;
+            position: relative;
+        }
+        
+        .line-numbers {
+            width: 40px;
+            min-width: 40px;
+            background: var(--code-bg);
+            color: var(--secondary);
+            text-align: right;
+            padding: 16px 8px 16px 0;
+            font-family: 'SF Mono', Menlo, Monaco, Consolas, 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.5;
+            user-select: none;
+            overflow-y: auto;
+            border-right: 1px solid var(--border-color);
+            white-space: pre;
+            scrollbar-width: none;
+        }
+        
+        .line-numbers::-webkit-scrollbar {
+            display: none;
+        }
+        
+        .code-container {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        #codeEditor {
+            width: 100%;
+            height: 100%;
+            padding: 16px;
+            border: none;
+            outline: none;
+            font-family: 'SF Mono', Menlo, Monaco, Consolas, 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.5;
+            resize: none;
+            background: transparent;
+            color: var(--text-color);
+            overflow: auto;
+        }
+        
+        #previewFrame {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background-color: white;
+        }
+        
+        #lineCounter {
+            font-size: 12px;
+            color: var(--secondary);
+            font-family: 'SF Mono', Menlo, Monaco, Consolas, 'Courier New', monospace;
+        }
+        
+        /* 刷新按钮样式（现代化设计） */
+        #refreshBtn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s ease;
+        }
+        
+        #refreshBtn:hover {
+            background: var(--primary-hover);
+            transform: translateY(-1px);
+        }
+        
+        #refreshBtn:active {
+            transform: translateY(0);
+        }
+        
+        /* 旋转动画 */
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .spin {
+            animation: spin 0.5s linear;
+        }
+        
+        /* 滚动条样式 */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: var(--bg-color);
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--secondary);
+        }
+        
+        @media (max-width: 768px) {
+            .app-container {
+                flex-direction: column;
+                padding: 12px;
+                gap: 12px;
+            }
+            .editor-panel, .preview-panel {
+                flex: none;
+                height: 50%;
+            }
+        }
+    </style>
+    <!-- 引入Font Awesome图标库 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <div class="editor-panel">
+            <div class="panel-header">
+                <div class="panel-title">
+                    <i class="fas fa-code"></i>
+                    <span>editor.html</span>
+                </div>
+                <div class="panel-actions">
+                    <span id="lineCounter">行数: 1 | 字符: 0</span>
+                </div>
+            </div>
+            <div class="panel-content">
+                <div class="editor-wrapper">
+                    <div class="line-numbers" id="lineNumbers"></div>
+                    <div class="code-container">
+                        <textarea id="codeEditor" spellcheck="false" placeholder="在此输入HTML代码..."></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="preview-panel">
+            <div class="panel-header">
+                <div class="panel-title">
+                    <i class="fas fa-eye"></i>
+                    <span>预览</span>
+                </div>
+                <div class="panel-actions">
+                    <button id="refreshBtn"><i class="fas fa-sync-alt"></i> 刷新</button>
+                </div>
+            </div>
+            <div class="panel-content">
+                <iframe id="previewFrame"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const codeEditor = document.getElementById('codeEditor');
+        const previewFrame = document.getElementById('previewFrame');
+        const lineCounter = document.getElementById('lineCounter');
+        const lineNumbers = document.getElementById('lineNumbers');
+        const refreshBtn = document.getElementById('refreshBtn');
+        const refreshIcon = refreshBtn.querySelector('i');
+
+        const defaultCode = `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的网页</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f7;
+        }
+        h1 {
+            color: #2188ff;
+            font-weight: 600;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 15px rgba(27, 31, 35, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>欢迎使用HTML编辑器</h1>
+        <p>这是一个现代化的HTML编辑器，左侧编写代码，右侧实时预览效果。</p>
+    </div>
+</body>
+</html>`;
+
+        codeEditor.value = defaultCode;
+
+        // 防抖函数
+        function debounce(func, delay) {
+            let timeoutId;
+            return function() {
+                clearTimeout(timeoutId);
+                timeoutId = setTimeout(func, delay);
+            };
+        }
+
+        // 更新行号（修复滚动同步问题）
+        function updateLineNumbers() {
+            const lines = codeEditor.value.split('\n');
+            const numbers = lines.map((_, i) => i + 1).join('\n');
+            lineNumbers.textContent = numbers;
+            lineCounter.textContent = `行数: ${lines.length} | 字符: ${codeEditor.value.length}`;
+        }
+
+        // 同步滚动
+        function syncScroll() {
+            lineNumbers.scrollTop = codeEditor.scrollTop;
+        }
+
+        // 运行代码
+        function runCode() {
+            const previewDocument = previewFrame.contentDocument || previewFrame.contentWindow.document;
+            previewDocument.open();
+            previewDocument.write(codeEditor.value);
+            previewDocument.close();
+        }
+
+        // 监听代码变化
+        codeEditor.addEventListener('input', debounce(() => {
+            updateLineNumbers();
+            runCode();
+        }, 300));
+
+        // 监听滚动事件
+        codeEditor.addEventListener('scroll', syncScroll);
+
+        // 刷新按钮（带动画）
+        refreshBtn.addEventListener('click', () => {
+            refreshIcon.classList.add('spin');
+            runCode();
+            setTimeout(() => {
+                refreshIcon.classList.remove('spin');
+            }, 500);
+        });
+
+        // 初始化
+        updateLineNumbers();
+        runCode();
+    </script>
+</body>
+</html>
