@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>天地图基础示例</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+        #map {
+            width: 100%;
+            height: 100%;
+        }
+        .control-panel {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 1000;
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.2);
+        }
+    </style>
+    <!-- 引入天地图API -->
+    <script src="https://api.tianditu.gov.cn/api?v=4.0&tk=d57840c15a0a45c43f4a220b375ddcf1"></script>
+</head>
+<body>
+    <div id="map"></div>
+    
+    <div class="control-panel">
+        <input type="text" id="address" placeholder="输入地址">
+        <button onclick="searchAddress()">搜索</button>
+        <button onclick="addMarker()">添加标记</button>
+        <button onclick="clearMarkers()">清除标记</button>
+    </div>
+
+    <script>
+        // 全局变量
+        let map;
+        let markers = [];
+        let geocoder;
+        
+        // 初始化地图
+        function initMap() {
+            // 创建地图实例
+            map = new T.Map('map');
+            
+            // 设置中心点和缩放级别
+            map.centerAndZoom(new T.LngLat(116.404, 39.915), 12);
+            
+            // 创建控件
+            map.addControl(new T.Control.Zoom());
+            map.addControl(new T.Control.Scale());
+            map.addControl(new T.Control.OverviewMap());
+            map.addControl(new T.Control.MapType());
+            
+            // 初始化地理编码器
+            geocoder = new T.Geocoder();
+            
+            // 点击地图事件
+            map.addEventListener('click', function(e) {
+                console.log('点击坐标:', e.lnglat.lng, e.lnglat.lat);
+                addMarkerAt(e.lnglat);
+            });
+        }
+        
+        // 地址搜索
+        function searchAddress() {
+            const address = document.getElementById('address').value;
+            if (!address) return;
+            
+            geocoder.getPoint(address, function(point) {
+                if (point) {
+                    map.centerAndZoom(point, 15);
+                    addMarkerAt(point);
+                } else {
+                    alert('未找到该地址');
+                }
+            });
+        }
+        
+        // 在指定位置添加标记
+        function addMarkerAt(lnglat) {
+            const marker = new T.Marker(lnglat);
+            map.addOverlay(marker);
+            markers.push(marker);
+            
+            // 点击标记显示坐标
+            marker.addEventListener('click', function() {
+                alert('坐标: ' + lnglat.lng + ', ' + lnglat.lat);
+            });
+        }
+        
+        // 在中心点添加标记
+        function addMarker() {
+            const center = map.getCenter();
+            addMarkerAt(center);
+        }
+        
+        // 清除所有标记
+        function clearMarkers() {
+            markers.forEach(marker => {
+                map.removeOverlay(marker);
+            });
+            markers = [];
+        }
+        
+        // 页面加载完成后初始化地图
+        window.onload = initMap;
+    </script>
+</body>
+</html>
